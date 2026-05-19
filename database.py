@@ -1,6 +1,5 @@
 # database.py
-# Handles all database operations for the GRC Toolkit.
-# Week 3 adds: users table, audit log table, user functions.
+# Updated: ndpr column renamed to ndpa to reflect NDPA 2023 + GAID 2025.
 
 import sqlite3
 import datetime
@@ -11,21 +10,15 @@ DB_FILE = "grc.db"
 
 
 def get_connection():
-    """Open a connection to the database."""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
-    """
-    Create all tables if they don't exist.
-    Populate controls and default users on first run.
-    """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Controls table (same as Week 2)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS controls (
             control_id       TEXT PRIMARY KEY,
@@ -35,12 +28,14 @@ def init_db():
             iso_description  TEXT,
             soc2_tsc         TEXT,
             soc2_description TEXT,
+            pci_dss          TEXT,
+            pci_description  TEXT,
+            ndpa             TEXT,
+            ndpa_description TEXT,
             status           TEXT DEFAULT 'Not Assessed'
         )
     """)
 
-    # Users table
-    # role is either 'admin' (can edit) or 'viewer' (read only)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,20 +45,17 @@ def init_db():
         )
     """)
 
-    # Audit log table
-    # Every status change gets recorded here with who did it and when
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            control_id  TEXT,
-            old_status  TEXT,
-            new_status  TEXT,
-            changed_by  TEXT,
-            changed_at  TEXT
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            control_id TEXT,
+            old_status TEXT,
+            new_status TEXT,
+            changed_by TEXT,
+            changed_at TEXT
         )
     """)
 
-    # Populate controls if empty
     cursor.execute("SELECT COUNT(*) FROM controls")
     if cursor.fetchone()[0] == 0:
         print("Initialising database with controls...")
@@ -72,8 +64,11 @@ def init_db():
                 INSERT INTO controls (
                     control_id, nist_function, nist_description,
                     iso_27001, iso_description,
-                    soc2_tsc, soc2_description, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    soc2_tsc, soc2_description,
+                    pci_dss, pci_description,
+                    ndpa, ndpa_description,
+                    status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 control_id,
                 details["nist_function"],
@@ -82,38 +77,29 @@ def init_db():
                 details["iso_description"],
                 ", ".join(details["soc2_tsc"]),
                 details["soc2_description"],
+                ", ".join(details["pci_dss"]),
+                details["pci_description"],
+                ", ".join(details["ndpa"]),
+                details["ndpa_description"],
                 details["status"]
             ))
         print(f"Loaded {len(CONTROLS_DB)} controls.")
 
-    # Create default users if none exist
-    # IMPORTANT: change these passwords after first login
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         print("Creating default users...")
-        default_users = [
-            ("admin",  "admin123",  "admin"),
-            ("viewer", "viewer123", "viewer"),
-        ]
-        for username, password, role in default_users:
-            # Never store plain text passwords. generate_password_hash encrypts them.
-            hashed = generate_password_hash(password)
+        for username, password, role in [("admin","admin123","admin"),("viewer","viewer123","viewer")]:
             cursor.execute(
                 "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, hashed, role)
+                (username, generate_password_hash(password), role)
             )
-        print("Default users created. Username: admin / Password: admin123")
+        print("Default users created.")
 
     conn.commit()
     conn.close()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONTROL FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_all_controls():
-    """Fetch all controls from the database."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM controls ORDER BY nist_function, control_id")
@@ -123,47 +109,26 @@ def get_all_controls():
 
 
 def update_status(control_id, new_status, changed_by):
-    """
-    Update a control's status and write to the audit log.
-    changed_by = the username of whoever made the change.
-    """
     valid_statuses = ["Compliant", "Partial", "Non-Compliant", "Not Assessed"]
     if new_status not in valid_statuses:
         return False
-
     conn = get_connection()
     cursor = conn.cursor()
-
-    # Get the current status before changing it (for the audit log)
     cursor.execute("SELECT status FROM controls WHERE control_id = ?", (control_id,))
     row = cursor.fetchone()
     old_status = row["status"] if row else "Unknown"
-
-    # Update the status
-    cursor.execute(
-        "UPDATE controls SET status = ? WHERE control_id = ?",
-        (new_status, control_id)
-    )
-
-    # Write to audit log
+    cursor.execute("UPDATE controls SET status = ? WHERE control_id = ?", (new_status, control_id))
     cursor.execute("""
         INSERT INTO audit_log (control_id, old_status, new_status, changed_by, changed_at)
         VALUES (?, ?, ?, ?, ?)
-    """, (
-        control_id,
-        old_status,
-        new_status,
-        changed_by,
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ))
-
+    """, (control_id, old_status, new_status, changed_by,
+          datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
     conn.close()
     return True
 
 
 def get_summary():
-    """Count controls by status."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT status, COUNT(*) as count FROM controls GROUP BY status")
@@ -176,25 +141,15 @@ def get_summary():
 
 
 def get_audit_log():
-    """Fetch the last 20 audit log entries, newest first."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM audit_log
-        ORDER BY changed_at DESC
-        LIMIT 20
-    """)
+    cursor.execute("SELECT * FROM audit_log ORDER BY changed_at DESC LIMIT 20")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# USER FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_user_by_username(username):
-    """Find a user by their username. Returns the row or None."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
@@ -204,10 +159,6 @@ def get_user_by_username(username):
 
 
 def verify_password(username, password):
-    """
-    Check if the username and password are correct.
-    Returns the user row if valid, None if not.
-    """
     user = get_user_by_username(username)
     if user and check_password_hash(user["password_hash"], password):
         return user
