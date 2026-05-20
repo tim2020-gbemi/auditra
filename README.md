@@ -90,8 +90,8 @@ Default credentials (change after first login):
 |---|---|
 | NIST CSF core controls | 13 |
 | PCI-DSS specific | 4 |
-| NDPA + GAID specific | 8 |
-| **Total** | **25** |
+| NDPA + GAID specific | 7 |
+| **Total** | **24** |
 
 ---
 
