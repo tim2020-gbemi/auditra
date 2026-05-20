@@ -24,7 +24,7 @@ Currently in active development. Phase 1 (web app) in progress.
 | NIST CSF | 2.0 | Core control structure |
 | ISO 27001 | 2022 | International standard |
 | SOC 2 | Trust Services Criteria | Service organization controls |
-| PCI-DSS | v4.0 | Payment card security |
+| PCI-DSS | v4.0.1 | Payment card security |
 | NDPA + GAID | 2023 + 2025 | Nigeria Data Protection Act + General Application and Implementation Directive |
 
 > NDPR 2019 is no longer in effect. This tool maps to the current Nigerian data protection instruments: NDPA 2023 and GAID 2025, effective September 19, 2025.

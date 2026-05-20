@@ -5,7 +5,7 @@ Maps controls across five frameworks:
 - NIST CSF 2.0
 - ISO 27001:2022
 - SOC 2 TSC
-- PCI-DSS v4.0
+- PCI-DSS v4.0.1
 - NDPA 2023 + GAID 2025 (Nigeria Data Protection Act + General Application
   and Implementation Directive)
 
@@ -471,7 +471,7 @@ def show_by_function(nist_function):
 def main():
     print("\n" + "="*70)
     print("  COMPLIANCE CROSS-REFERENCE MAPPER")
-    print("  NIST CSF 2.0 | ISO 27001:2022 | SOC 2 | PCI-DSS v4.0 | NDPA 2023 + GAID 2025")
+    print("  NIST CSF 2.0 | ISO 27001:2022 | SOC 2 | PCI-DSS v4.0.1| NDPA 2023 + GAID 2025")
     print("="*70)
     while True:
         print("\nCOMMANDS:")
