@@ -4,99 +4,361 @@
     <meta charset="UTF-8">
     <title>Compliance Report</title>
     <style>
-        * { box-sizing:border-box; margin:0; padding:0; }
-        body { font-family:Arial,sans-serif; font-size:10px; color:#1a1a2e; padding:40px; background:#fff; }
-        .header { border-left:4px solid #4f8ef7; padding-left:16px; margin-bottom:28px; }
-        .header h1 { font-size:18px; font-weight:bold; color:#0d0d1a; margin-bottom:4px; }
-        .header p { font-size:10px; color:#666; }
-        .score-banner { display:flex; gap:20px; align-items:center; background:#f4f6fb; border:1px solid #d0d8f0; border-radius:6px; padding:14px 20px; margin-bottom:20px; }
-        .score-number { font-size:36px; font-weight:bold; color:#4f8ef7; line-height:1; }
-        .score-label { font-size:9px; color:#888; text-transform:uppercase; letter-spacing:.1em; }
-        .score-divider { width:1px; height:36px; background:#d0d8f0; }
-        .score-note { font-size:10px; color:#555; line-height:1.6; }
-        .cards { display:flex; gap:10px; margin-bottom:28px; }
-        .card { flex:1; border:1px solid #d0d8f0; border-radius:6px; padding:12px; text-align:center; background:#f9faff; }
-        .card .count { font-size:24px; font-weight:bold; line-height:1; margin-bottom:4px; }
-        .card .label { font-size:8px; text-transform:uppercase; letter-spacing:.1em; color:#888; }
-        .card.compliant .count { color:#1a7a4a; }
-        .card.partial .count { color:#a07000; }
-        .card.noncomp .count { color:#c0302a; }
-        .card.unassessed .count { color:#888; }
-        .section-title { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:#888; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #e0e4f0; }
-        table { width:100%; border-collapse:collapse; margin-bottom:28px; }
-        thead th { background:#f0f3fb; color:#555; font-size:8px; text-transform:uppercase; letter-spacing:.08em; padding:6px 8px; text-align:left; border-bottom:2px solid #d0d8f0; }
-        tbody tr { border-bottom:1px solid #eaecf5; }
-        tbody tr:nth-child(even) { background:#f9faff; }
-        td { padding:6px 8px; vertical-align:top; font-size:9px; }
-        td small { display:block; color:#888; font-size:8px; margin-top:1px; }
-        .control-id { font-weight:bold; color:#4f8ef7; white-space:nowrap; }
-        .description { max-width:160px; }
-        .func-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:8px; font-weight:bold; }
-        .func-govern   { background:#dde8ff; color:#2255bb; }
-        .func-identify { background:#d4f5e8; color:#1a6644; }
-        .func-protect  { background:#ecdeff; color:#6622aa; }
-        .func-detect   { background:#fff3d4; color:#885500; }
-        .func-respond  { background:#ffe0e0; color:#aa2222; }
-        .func-recover  { background:#d4f5f5; color:#116666; }
-        .status-badge { display:inline-block; padding:2px 6px; border-radius:3px; font-size:8px; font-weight:bold; }
-        .status-compliant  { background:#d4f0e0; color:#1a7a4a; }
-        .status-partial    { background:#fff0c0; color:#a07000; }
-        .status-noncomp    { background:#fdd; color:#c0302a; }
-        .status-unassessed { background:#eee; color:#888; }
-        .audit-table td { font-size:9px; }
-        .footer { margin-top:28px; padding-top:10px; border-top:1px solid #e0e4f0; font-size:9px; color:#aaa; display:flex; justify-content:space-between; }
-        tr { page-break-inside:avoid; }
+        /* ── PAGE SETUP ── */
+        @page {
+            size: A4 landscape;
+            margin: 18mm 14mm 18mm 14mm;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a2e;
+            background: #ffffff;
+        }
+
+        /* ── COVER HEADER ── */
+        .cover-header {
+            display: table;
+            width: 100%;
+            border-bottom: 3px solid #4f8ef7;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+        .cover-header-left {
+            display: table-cell;
+            vertical-align: bottom;
+        }
+        .cover-header-right {
+            display: table-cell;
+            vertical-align: bottom;
+            text-align: right;
+        }
+        .cover-header h1 {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0d0d1a;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+        }
+        .cover-header .sub {
+            font-size: 10px;
+            color: #666;
+            letter-spacing: 0.04em;
+        }
+        .cover-header .meta {
+            font-size: 10px;
+            color: #888;
+            line-height: 1.8;
+        }
+        .cover-header .meta strong {
+            color: #444;
+        }
+
+        /* ── SCORE BANNER ── */
+        .score-banner {
+            display: table;
+            width: 100%;
+            background: #f0f4ff;
+            border: 1px solid #c8d4f0;
+            border-left: 5px solid #4f8ef7;
+            border-radius: 4px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+        }
+        .score-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 120px;
+        }
+        .score-number {
+            font-size: 44px;
+            font-weight: bold;
+            color: #4f8ef7;
+            line-height: 1;
+        }
+        .score-label {
+            font-size: 9px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+        .score-divider {
+            display: table-cell;
+            vertical-align: middle;
+            width: 1px;
+            background: #c8d4f0;
+            padding: 0 1px;
+        }
+        .score-right {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 20px;
+            font-size: 11px;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        /* ── SUMMARY CARDS ── */
+        .cards {
+            display: table;
+            width: 100%;
+            margin-bottom: 24px;
+            border-spacing: 8px;
+        }
+        .cards-row { display: table-row; }
+        .card {
+            display: table-cell;
+            border: 1px solid #d0d8f0;
+            border-radius: 5px;
+            padding: 14px 10px;
+            text-align: center;
+            background: #f9faff;
+            width: 25%;
+        }
+        .card .count {
+            font-size: 30px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        .card .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+        }
+        .card.compliant  .count { color: #1a7a4a; }
+        .card.partial    .count { color: #a07000; }
+        .card.noncomp    .count { color: #c0302a; }
+        .card.unassessed .count { color: #999; }
+
+        /* ── SECTION TITLE ── */
+        .section-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #4f8ef7;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e0e8ff;
+        }
+
+        /* ── CONTROLS TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        thead th {
+            background: #1a2a5a;
+            color: #c8d8ff;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 9px 8px;
+            text-align: left;
+            border: 1px solid #243070;
+        }
+
+        tbody tr { page-break-inside: avoid; }
+        tbody tr:nth-child(even) { background: #f4f7ff; }
+        tbody tr:nth-child(odd)  { background: #ffffff; }
+
+        td {
+            padding: 8px;
+            vertical-align: top;
+            font-size: 10px;
+            border: 1px solid #dde4f5;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        td small {
+            display: block;
+            color: #888;
+            font-size: 9px;
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        /* ── COLUMN WIDTHS ── */
+        .col-id     { width: 8%; }
+        .col-func   { width: 8%; }
+        .col-desc   { width: 24%; }
+        .col-iso    { width: 12%; }
+        .col-soc    { width: 10%; }
+        .col-pci    { width: 10%; }
+        .col-ndpa   { width: 16%; }
+        .col-status { width: 8%; }
+
+        .control-id {
+            font-weight: bold;
+            color: #2255bb;
+            font-size: 9px;
+        }
+
+        /* ── FUNCTION BADGES ── */
+        .func-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .func-govern   { background: #dde8ff; color: #2255bb; }
+        .func-identify { background: #d4f5e8; color: #1a6644; }
+        .func-protect  { background: #ecdeff; color: #6622aa; }
+        .func-detect   { background: #fff3d4; color: #885500; }
+        .func-respond  { background: #ffe0e0; color: #aa2222; }
+        .func-recover  { background: #d4f5f5; color: #116666; }
+
+        /* ── STATUS BADGES ── */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 7px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .status-compliant  { background: #d4f0e0; color: #1a7a4a; border: 1px solid #a0dbb8; }
+        .status-partial    { background: #fff0c0; color: #a07000; border: 1px solid #e0cc70; }
+        .status-noncomp    { background: #fdd;    color: #c0302a; border: 1px solid #e09090; }
+        .status-unassessed { background: #eee;    color: #777;    border: 1px solid #ccc; }
+
+        /* ── FOOTER ── */
+        .report-footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #c8d4f0;
+            display: table;
+            width: 100%;
+        }
+        .footer-left  { display: table-cell; font-size: 9px; color: #aaa; }
+        .footer-right { display: table-cell; font-size: 9px; color: #aaa; text-align: right; }
+
+        /* ── PAGE BREAK CONTROL ── */
+        .no-break { page-break-inside: avoid; }
+        thead { display: table-header-group; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>COMPLIANCE REPORT</h1>
-        <p>NIST CSF 2.0 / ISO 27001:2022 / SOC 2 TSC / PCI-DSS v4.0.1 / NDPA 2023 + GAID 2025 &nbsp;|&nbsp; Generated: {{ date }} &nbsp;|&nbsp; By: {{ username }}</p>
+
+    <!-- COVER HEADER -->
+    <div class="cover-header">
+        <div class="cover-header-left">
+            <h1>COMPLIANCE REPORT</h1>
+            <div class="sub">
+                NIST CSF 2.0 &nbsp;|&nbsp; ISO 27001:2022 &nbsp;|&nbsp;
+                SOC 2 TSC &nbsp;|&nbsp; PCI-DSS v4.0.1 &nbsp;|&nbsp;
+                NDPA 2023 + GAID 2025
+            </div>
+        </div>
+        <div class="cover-header-right">
+            <div class="meta">
+                <strong>Generated:</strong> {{ date }}<br>
+                <strong>Prepared by:</strong> {{ username }}<br>
+                <strong>Classification:</strong> Confidential
+            </div>
+        </div>
     </div>
 
+    <!-- SCORE BANNER -->
     <div class="score-banner">
-        <div>
+        <div class="score-left">
             <div class="score-number">{{ score }}%</div>
             <div class="score-label">Compliance Score</div>
         </div>
         <div class="score-divider"></div>
-        <div class="score-note">
-            Based on <strong>{{ total }}</strong> controls across five frameworks.<br>
-            Score counts only Compliant controls as passed.
+        <div class="score-right">
+            Assessment covers <strong>{{ total }} controls</strong> across five frameworks.
+            Score is calculated as the percentage of controls with a <strong>Compliant</strong> status.
+            Controls marked Partial or Non-Compliant require remediation action.
+            Not Assessed controls must be evaluated before a final compliance posture can be determined.
         </div>
     </div>
 
+    <!-- SUMMARY CARDS -->
     <div class="cards">
-        <div class="card compliant"><div class="count">{{ summary['Compliant'] }}</div><div class="label">Compliant</div></div>
-        <div class="card partial"><div class="count">{{ summary['Partial'] }}</div><div class="label">Partial</div></div>
-        <div class="card noncomp"><div class="count">{{ summary['Non-Compliant'] }}</div><div class="label">Non-Compliant</div></div>
-        <div class="card unassessed"><div class="count">{{ summary['Not Assessed'] }}</div><div class="label">Not Assessed</div></div>
+        <div class="cards-row">
+            <div class="card compliant">
+                <div class="count">{{ summary['Compliant'] }}</div>
+                <div class="label">Compliant</div>
+            </div>
+            <div class="card partial">
+                <div class="count">{{ summary['Partial'] }}</div>
+                <div class="label">Partial</div>
+            </div>
+            <div class="card noncomp">
+                <div class="count">{{ summary['Non-Compliant'] }}</div>
+                <div class="label">Non-Compliant</div>
+            </div>
+            <div class="card unassessed">
+                <div class="count">{{ summary['Not Assessed'] }}</div>
+                <div class="label">Not Assessed</div>
+            </div>
+        </div>
     </div>
 
-    <p class="section-title">Controls</p>
+    <!-- CONTROLS TABLE -->
+    <div class="section-title">Control Assessment Summary</div>
     <table>
         <thead>
             <tr>
-                <th>Control ID</th><th>Function</th><th>Description</th>
-                <th>ISO 27001</th><th>SOC 2</th><th>PCI-DSS</th><th>NDPA/GAID</th><th>Status</th>
+                <th class="col-id">Control ID</th>
+                <th class="col-func">Function</th>
+                <th class="col-desc">Description</th>
+                <th class="col-iso">ISO 27001</th>
+                <th class="col-soc">SOC 2</th>
+                <th class="col-pci">PCI-DSS</th>
+                <th class="col-ndpa">NDPA / GAID</th>
+                <th class="col-status">Status</th>
             </tr>
         </thead>
         <tbody>
             {% for row in controls %}
             <tr>
                 <td class="control-id">{{ row['control_id'] }}</td>
-                <td><span class="func-badge func-{{ row['nist_function'] | lower }}">{{ row['nist_function'] }}</span></td>
-                <td class="description">{{ row['nist_description'] }}</td>
-                <td>{{ row['iso_27001'] }}<small>{{ row['iso_description'] }}</small></td>
-                <td>{{ row['soc2_tsc'] }}<small>{{ row['soc2_description'] }}</small></td>
-                <td>{{ row['pci_dss'] }}<small>{{ row['pci_description'] }}</small></td>
-                <td>{{ row['ndpa'] }}<small>{{ row['ndpa_description'] }}</small></td>
+                <td>
+                    <span class="func-badge func-{{ row['nist_function'] | lower }}">
+                        {{ row['nist_function'] }}
+                    </span>
+                </td>
+                <td>{{ row['nist_description'] }}</td>
+                <td>
+                    {{ row['iso_27001'] }}
+                    <small>{{ row['iso_description'] }}</small>
+                </td>
+                <td>
+                    {{ row['soc2_tsc'] }}
+                    <small>{{ row['soc2_description'] }}</small>
+                </td>
+                <td>
+                    {{ row['pci_dss'] }}
+                    <small>{{ row['pci_description'] }}</small>
+                </td>
+                <td>
+                    {{ row['ndpa'] }}
+                    <small>{{ row['ndpa_description'] }}</small>
+                </td>
                 <td>
                     {% set s = row['status'] %}
-                    {% if s == 'Compliant' %}<span class="status-badge status-compliant">Compliant</span>
-                    {% elif s == 'Partial' %}<span class="status-badge status-partial">Partial</span>
-                    {% elif s == 'Non-Compliant' %}<span class="status-badge status-noncomp">Non-Compliant</span>
-                    {% else %}<span class="status-badge status-unassessed">Not Assessed</span>
+                    {% if s == 'Compliant' %}
+                        <span class="status-badge status-compliant">Compliant</span>
+                    {% elif s == 'Partial' %}
+                        <span class="status-badge status-partial">Partial</span>
+                    {% elif s == 'Non-Compliant' %}
+                        <span class="status-badge status-noncomp">Non-Compliant</span>
+                    {% else %}
+                        <span class="status-badge status-unassessed">Not Assessed</span>
                     {% endif %}
                 </td>
             </tr>
@@ -104,29 +366,11 @@
         </tbody>
     </table>
 
-    <p class="section-title">Recent Activity</p>
-    <table class="audit-table">
-        <thead>
-            <tr><th>Control</th><th>From</th><th>To</th><th>Changed By</th><th>When</th></tr>
-        </thead>
-        <tbody>
-            {% for entry in audit_log %}
-            <tr>
-                <td><strong>{{ entry['control_id'] }}</strong></td>
-                <td>{{ entry['old_status'] }}</td>
-                <td>{{ entry['new_status'] }}</td>
-                <td>{{ entry['changed_by'] }}</td>
-                <td>{{ entry['changed_at'] }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" style="color:#aaa;text-align:center;">No changes recorded yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="footer">
-        <span>grc-toolkit / compliance report</span>
-        <span>{{ date }}</span>
+    <!-- FOOTER -->
+    <div class="report-footer">
+        <div class="footer-left">GRC Toolkit &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Not for external distribution without authorization</div>
+        <div class="footer-right">Report Date: {{ date }}</div>
     </div>
+
 </body>
 </html>

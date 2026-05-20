@@ -1,5 +1,5 @@
 # database.py
-# Updated: ndpr column renamed to ndpa to reflect NDPA 2023 + GAID 2025.
+# Updated: added is_active column, user management functions.
 
 import sqlite3
 import datetime
@@ -36,12 +36,15 @@ def init_db():
         )
     """)
 
+    # is_active: 1 = account active, 0 = pending admin approval
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             username      TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            role          TEXT DEFAULT 'viewer'
+            role          TEXT DEFAULT 'viewer',
+            is_active     INTEGER DEFAULT 0,
+            created_at    TEXT
         )
     """)
 
@@ -56,6 +59,7 @@ def init_db():
         )
     """)
 
+    # Populate controls if empty
     cursor.execute("SELECT COUNT(*) FROM controls")
     if cursor.fetchone()[0] == 0:
         print("Initialising database with controls...")
@@ -66,8 +70,7 @@ def init_db():
                     iso_27001, iso_description,
                     soc2_tsc, soc2_description,
                     pci_dss, pci_description,
-                    ndpa, ndpa_description,
-                    status
+                    ndpa, ndpa_description, status
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 control_id,
@@ -85,19 +88,29 @@ def init_db():
             ))
         print(f"Loaded {len(CONTROLS_DB)} controls.")
 
+    # Create default admin user if no users exist
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        print("Creating default users...")
-        for username, password, role in [("admin","admin123","admin"),("viewer","viewer123","viewer")]:
-            cursor.execute(
-                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, generate_password_hash(password), role)
-            )
-        print("Default users created.")
+        print("Creating default admin user...")
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            "admin",
+            generate_password_hash("admin123"),
+            "admin",
+            1,  # admin is active by default
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
+        print("Default admin created. Username: admin / Password: admin123")
 
     conn.commit()
     conn.close()
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONTROL FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
 
 def get_all_controls():
     conn = get_connection()
@@ -149,6 +162,10 @@ def get_audit_log():
     return rows
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# USER FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
 def get_user_by_username(username):
     conn = get_connection()
     cursor = conn.cursor()
@@ -158,8 +175,169 @@ def get_user_by_username(username):
     return user
 
 
+def get_user_by_id(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+
+def get_all_users():
+    """Fetch all users. Used by admin on user management page."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+
 def verify_password(username, password):
+    """
+    Check credentials. Returns user only if password matches AND account is active.
+    Inactive accounts get a specific message so user knows to wait for approval.
+    """
     user = get_user_by_username(username)
-    if user and check_password_hash(user["password_hash"], password):
-        return user
-    return None
+    if not user:
+        return None, "invalid"
+    if not check_password_hash(user["password_hash"], password):
+        return None, "invalid"
+    if not user["is_active"]:
+        return None, "inactive"
+    return user, "ok"
+
+
+def register_user(username, password):
+    """
+    Create a new user account. is_active=0 so admin must approve first.
+    Returns True on success, False if username already exists.
+    """
+    if get_user_by_username(username):
+        return False, "Username already exists."
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters."
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            username,
+            generate_password_hash(password),
+            "viewer",   # all self-registered users start as viewer
+            0,          # inactive until admin approves
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
+        conn.commit()
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+
+def create_user_by_admin(username, password, role):
+    """Admin creates a user directly. Account is active immediately."""
+    if get_user_by_username(username):
+        return False, "Username already exists."
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters."
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            username,
+            generate_password_hash(password),
+            role,
+            1,  # admin-created accounts are active immediately
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
+        conn.commit()
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+
+def activate_user(user_id):
+    """Admin approves a pending registration."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_active = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def deactivate_user(user_id):
+    """Admin deactivates an account without deleting it."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_active = 0 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def update_user_role(user_id, new_role):
+    """Admin changes a user's role."""
+    if new_role not in ["admin", "viewer"]:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def change_password(user_id, current_password, new_password):
+    """
+    User changes their own password.
+    Verifies current password before allowing the change.
+    """
+    user = get_user_by_id(user_id)
+    if not user:
+        return False, "User not found."
+    if not check_password_hash(user["password_hash"], current_password):
+        return False, "Current password is incorrect."
+    if len(new_password) < 8:
+        return False, "New password must be at least 8 characters."
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(new_password), user_id)
+    )
+    conn.commit()
+    conn.close()
+    return True, "Password updated successfully."
+
+
+def admin_reset_password(user_id, new_password):
+    """Admin resets any user's password without needing the current one."""
+    if len(new_password) < 8:
+        return False, "Password must be at least 8 characters."
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(new_password), user_id)
+    )
+    conn.commit()
+    conn.close()
+    return True, "Password reset successfully."
+
+
+def delete_user(user_id):
+    """Admin permanently deletes a user account."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()

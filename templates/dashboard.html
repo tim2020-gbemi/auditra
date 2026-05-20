@@ -71,17 +71,19 @@
 <body>
 
     <div class="topbar">
-        <div class="topbar-left">
-            <h1>COMPLIANCE DASHBOARD</h1>
-            <p>NIST CSF 2.0 &nbsp;/&nbsp; ISO 27001:2022 &nbsp;/&nbsp; SOC 2 &nbsp;/&nbsp; PCI-DSS v4.0.1 &nbsp;/&nbsp; NDPA 2023 + GAID 2025</p>
-        </div>
-        <div class="topbar-right">
-            <div class="user-badge">Signed in as <span>{{ username }}</span></div>
-            <span class="role-badge role-{{ role }}">{{ role | upper }}</span>
-            <a href="/pdf" class="pdf-btn">Download PDF</a>
-            <a href="/logout" class="logout-btn">Sign Out</a>
-        </div>
+    <div class="topbar-left">
+        <h1>COMPLIANCE DASHBOARD</h1>
+        <p>NIST CSF 2.0 &nbsp;/&nbsp; ISO 27001:2022 &nbsp;/&nbsp; SOC 2 &nbsp;/&nbsp; PCI-DSS v4.0.1 &nbsp;/&nbsp; NDPA 2023 + GAID 2025</p>
     </div>
+    <div class="topbar-right">
+        <div class="user-badge">Signed in as <span>{{ username }}</span></div>
+        <span class="role-badge role-{{ role }}">{{ role | upper }}</span>
+        <a href="/change-password" class="logout-btn">Change Password</a>
+        {% if role == 'admin' %}<a href="/users" class="logout-btn">Users</a>{% endif %}
+        <a href="/pdf" class="pdf-btn">Download PDF</a>
+        <a href="/logout" class="logout-btn">Sign Out</a>
+    </div>
+</div>
 
     <div class="score-banner">
         <div>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GRC Toolkit - User Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; --error:#f76f6f; --success:#4cda8a; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
+        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; }
+        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+        .topbar-right { display:flex; align-items:center; gap:12px; }
+        .back-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .back-btn:hover { border-color:var(--accent); color:var(--text); }
+        .logout-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .logout-btn:hover { border-color:var(--accent); color:var(--text); }
+        .error   { background:rgba(247,111,111,.1); border:1px solid rgba(247,111,111,.3); border-radius:5px; padding:10px 16px; color:var(--error); font-size:13px; margin-bottom:24px; }
+        .success { background:rgba(76,218,138,.1); border:1px solid rgba(76,218,138,.3); border-radius:5px; padding:10px 16px; color:var(--success); font-size:13px; margin-bottom:24px; }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-bottom:40px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:28px; }
+        .card h2 { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#fff; letter-spacing:.05em; margin-bottom:20px; text-transform:uppercase; }
+        .field { margin-bottom:14px; }
+        .field label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+        .field input, .field select { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 12px; color:var(--text); font-size:13px; outline:none; font-family:'IBM Plex Sans',sans-serif; }
+        .field input:focus, .field select:focus { border-color:var(--accent); }
+        .btn { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:8px 20px; font-size:12px; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+        .btn:hover { opacity:.85; }
+        .btn-danger { background:#7a1e1e; color:#ffb3b3; border:none; border-radius:4px; padding:4px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+        .btn-danger:hover { background:#9a2e2e; }
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.1em; padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        tbody tr { border-bottom:1px solid var(--border); }
+        tbody tr:last-child { border-bottom:none; }
+        tbody tr:hover { background:rgba(79,142,247,.04); }
+        td { padding:12px 16px; vertical-align:middle; font-size:13px; }
+        .username-cell { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accent); }
+        .role-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; }
+        .role-admin  { background:#1a2e5a; color:#7ab4ff; }
+        .role-viewer { background:#2a2a3d; color:#9999bb; }
+        .status-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; }
+        .status-active   { background:#1a6e3c; color:#a8f0c6; }
+        .status-inactive { background:#3a2a00; color:#ffd480; }
+        .action-group { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        .action-form { display:inline; }
+        .inline-input { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-size:11px; font-family:'IBM Plex Mono',monospace; width:140px; }
+        .inline-select { background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-size:11px; font-family:'IBM Plex Mono',monospace; }
+        .btn-small { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:4px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+        .btn-small:hover { opacity:.85; }
+        .btn-warn { background:#7a5c00; color:#ffe08a; border:none; border-radius:4px; padding:4px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace; cursor:pointer; text-decoration:none; display:inline-block; }
+        .btn-warn:hover { opacity:.85; }
+        .btn-activate { background:#1a6e3c; color:#a8f0c6; border:none; border-radius:4px; padding:4px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace; cursor:pointer; text-decoration:none; display:inline-block; }
+        .btn-activate:hover { opacity:.85; }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>USER MANAGEMENT</h1>
+            <p>Signed in as {{ username }} &nbsp;/&nbsp; Admin</p>
+        </div>
+        <div class="topbar-right">
+            <a href="/" class="back-btn">Back to Dashboard</a>
+            <a href="/logout" class="logout-btn">Sign Out</a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="success">{{ success }}</div>
+    {% endif %}
+
+    <!-- CREATE USER FORM -->
+    <div class="grid">
+        <div class="card">
+            <h2>Create New User</h2>
+            <form method="POST" action="/users/create">
+                <div class="field">
+                    <label>Username</label>
+                    <input type="text" name="username" required placeholder="Enter username">
+                </div>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="Min. 8 characters">
+                </div>
+                <div class="field">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="viewer">Viewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button class="btn" type="submit">CREATE USER</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>About Roles</h2>
+            <p style="color:var(--muted);font-size:13px;line-height:1.7;">
+                <strong style="color:var(--text)">Admin</strong> can update control statuses,
+                manage users, reset passwords, and export reports.<br><br>
+                <strong style="color:var(--text)">Viewer</strong> has read-only access to the
+                dashboard and can export reports, but cannot change any data.<br><br>
+                Self-registered accounts start as <strong style="color:var(--text)">Viewer</strong>
+                and require admin activation before they can log in.
+            </p>
+        </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <p class="section-title">All Users</p>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td class="username-cell">{{ user['username'] }}</td>
+                    <td>
+                        <span class="role-badge role-{{ user['role'] }}">
+                            {{ user['role'] | upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user['is_active'] %}
+                        <span class="status-badge status-active">Active</span>
+                        {% else %}
+                        <span class="status-badge status-inactive">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">
+                        {{ user['created_at'] or 'N/A' }}
+                    </td>
+                    <td>
+                        <div class="action-group">
+
+                            <!-- Activate / Deactivate -->
+                            {% if not user['is_active'] %}
+                            <a href="/users/activate/{{ user['id'] }}" class="btn-activate">Activate</a>
+                            {% else %}
+                            <a href="/users/deactivate/{{ user['id'] }}" class="btn-warn">Deactivate</a>
+                            {% endif %}
+
+                            <!-- Change Role -->
+                            <form class="action-form" method="POST" action="/users/role/{{ user['id'] }}">
+                                <select class="inline-select" name="role" onchange="this.form.submit()">
+                                    <option value="viewer" {% if user['role'] == 'viewer' %}selected{% endif %}>Viewer</option>
+                                    <option value="admin"  {% if user['role'] == 'admin'  %}selected{% endif %}>Admin</option>
+                                </select>
+                            </form>
+
+                            <!-- Reset Password -->
+                            <form class="action-form" method="POST" action="/users/reset-password/{{ user['id'] }}">
+                                <input class="inline-input" type="password" name="new_password" placeholder="New password" minlength="8">
+                                <button class="btn-small" type="submit">Reset</button>
+                            </form>
+
+                            <!-- Delete -->
+                            <a href="/users/delete/{{ user['id'] }}"
+                               class="btn-danger"
+                               onclick="return confirm('Delete user {{ user['username'] }}? This cannot be undone.')">
+                               Delete
+                            </a>
+
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
