@@ -109,7 +109,7 @@
         <button class="filter-btn active" onclick="filterFramework('all', this)">All</button>
         <button class="filter-btn" onclick="filterFramework('nist', this)">NIST CSF</button>
         <button class="filter-btn" onclick="filterFramework('pci', this)">PCI-DSS</button>
-        <button class="filter-btn" onclick="filterFramework('ndpr', this)">NDPA/GAID</button>
+        <button class="filter-btn" onclick="filterFramework('ndpa', this)">NDPA/GAID</button>
     </div>
 
     <p class="section-title">Controls</p>
@@ -187,21 +187,21 @@
 
     <script>
         // Framework filter: shows only rows matching the selected framework prefix
-        function filterFramework(framework, btn) {
+             function filterFramework(framework, btn) {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const rows = document.querySelectorAll('#controls-table tbody tr');
             rows.forEach(row => {
-                const id = row.getAttribute('data-id').toLowerCase();
-                if (framework === 'all') {
-                    row.style.display = '';
-                } else if (framework === 'pci') {
-                    row.style.display = id.startsWith('pci') ? '' : 'none';
-                } else if (framework === 'ndpr') {
-                    row.style.display = id.startsWith('ndpr') ? '' : 'none';
-                } else if (framework === 'nist') {
-                    row.style.display = (!id.startsWith('pci') && !id.startsWith('ndpr')) ? '' : 'none';
-                }
+            const id = row.getAttribute('data-id').toLowerCase();
+            if (framework === 'all') {
+                row.style.display = '';
+            } else if (framework === 'pci') {
+                row.style.display = id.startsWith('pci') ? '' : 'none';
+            } else if (framework === 'ndpa') {
+                row.style.display = (id.startsWith('ndpa') || id.startsWith('gaid')) ? '' : 'none';
+            } else if (framework === 'nist') {
+                row.style.display = (!id.startsWith('pci') && !id.startsWith('ndpa') && !id.startsWith('gaid')) ? '' : 'none';
+            }
             });
         }
     </script>
