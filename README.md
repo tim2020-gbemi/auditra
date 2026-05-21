@@ -1,4 +1,4 @@
-# GRC Toolkit
+# Auditra
 
 Security automation tool for GRC engineers and compliance analysts.
 Built to reduce manual effort on control mapping, assessment tracking, and audit reporting.
