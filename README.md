@@ -33,7 +33,7 @@ Currently in active development. Phase 1 (web app) in progress.
 
 ## Project Structure
 grc-toolkit/
-├── compliance_mapper.py   # Core control database (25 controls across 5 frameworks)
+├── compliance_mapper.py   # Core control database (24 controls across 5 frameworks)
 ├── app.py                 # Flask web server with auth and routes
 ├── database.py            # SQLite database layer with audit logging
 ├── templates/
