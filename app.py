@@ -2,6 +2,7 @@
 # Updated: added registration, user management, and password change routes.
 
 import datetime
+import csv  
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from xhtml2pdf import pisa
 import io
@@ -150,8 +151,78 @@ def export_pdf():
     response.headers["Content-Type"]        = "application/pdf"
     response.headers["Content-Disposition"] = f"attachment; filename=compliance_report_{date}.pdf"
     return response
+@app.route("/csv")
+def export_csv():
+    """Generate and download a CSV compliance report."""
+    if not logged_in():
+        return redirect(url_for("login"))
+
+    controls = get_all_controls()
+    date     = datetime.date.today().strftime("%Y-%m-%d")
+
+    # Build CSV content in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow([
+        "Control ID", "NIST Function", "NIST Description",
+        "ISO 27001", "ISO Detail",
+        "SOC 2 TSC", "SOC 2 Detail",
+        "PCI-DSS", "PCI Detail",
+        "NDPA/GAID", "NDPA Detail",
+        "Status"
+    ])
+
+    # Data rows
+    for row in controls:
+        writer.writerow([
+            row["control_id"],
+            row["nist_function"],
+            row["nist_description"],
+            row["iso_27001"],
+            row["iso_description"],
+            row["soc2_tsc"],
+            row["soc2_description"],
+            row["pci_dss"],
+            row["pci_description"],
+            row["ndpa"],
+            row["ndpa_description"],
+            row["status"]
+        ])
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"]        = "text/csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.csv"
+    return response
 
 
+@app.route("/html-export")
+def export_html():
+    """Generate and download a standalone HTML compliance report."""
+    if not logged_in():
+        return redirect(url_for("login"))
+
+    controls  = get_all_controls()
+    summary   = get_summary()
+    total     = len(controls)
+    score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
+    date      = datetime.date.today().strftime("%Y-%m-%d")
+
+    html_string = render_template(
+        "report_html.html",
+        controls=controls,
+        summary=summary,
+        score=score,
+        total=total,
+        date=date,
+        username=session["username"]
+    )
+
+    response = make_response(html_string)
+    response.headers["Content-Type"]        = "text/html"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.html"
+    return response
 # ─────────────────────────────────────────────────────────────────────────────
 # PASSWORD CHANGE (any logged-in user)
 # ─────────────────────────────────────────────────────────────────────────────
