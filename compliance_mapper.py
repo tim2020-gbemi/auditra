@@ -12,7 +12,7 @@ Maps controls across five frameworks:
 Note: NDPR 2019 is no longer in effect. NDPA 2023 and GAID 2025 are the
 two governing instruments for data protection in Nigeria from Sept 19, 2025.
 
-Author: [Your Name]
+Author: Oluwatimilehin Oluwagbemi
 Purpose: GRC Portfolio Project
 """
 

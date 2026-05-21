@@ -13,7 +13,7 @@ from database import (
 )
 
 app = Flask(__name__)
-app.secret_key = "grc-toolkit-secret-key-change-in-production"
+app.secret_key = "auditra-secret-key-change-in-production"
 
 init_db()
 
