@@ -63,6 +63,9 @@ grc-toolkit/
 - HTML dashboard export for browser viewing
 - PDF export for audit delivery
 
+### Exports
+- Exports audit-ready reports in PDF, CSV, and HTML formats
+
 ### Audit Trail
 - Every status change recorded: control, old status, new status, who, when
 - Visible on the dashboard and included in PDF reports
