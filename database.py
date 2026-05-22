@@ -20,21 +20,23 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS controls (
-            control_id       TEXT PRIMARY KEY,
-            nist_function    TEXT,
-            nist_description TEXT,
-            iso_27001        TEXT,
-            iso_description  TEXT,
-            soc2_tsc         TEXT,
-            soc2_description TEXT,
-            pci_dss          TEXT,
-            pci_description  TEXT,
-            ndpa             TEXT,
-            ndpa_description TEXT,
-            status           TEXT DEFAULT 'Not Assessed'
-        )
-    """)
+    CREATE TABLE IF NOT EXISTS controls (
+        control_id       TEXT PRIMARY KEY,
+        nist_function    TEXT,
+        nist_description TEXT,
+        iso_27001        TEXT,
+        iso_description  TEXT,
+        soc2_tsc         TEXT,
+        soc2_description TEXT,
+        pci_dss          TEXT,
+        pci_description  TEXT,
+        ndpa             TEXT,
+        ndpa_description TEXT,
+        gdpr             TEXT,
+        gdpr_description TEXT,
+        status           TEXT DEFAULT 'Not Assessed'
+    )
+""")
 
     # is_active: 1 = account active, 0 = pending admin approval
     cursor.execute("""
@@ -65,27 +67,31 @@ def init_db():
         print("Initialising database with controls...")
         for control_id, details in CONTROLS_DB.items():
             cursor.execute("""
-                INSERT INTO controls (
-                    control_id, nist_function, nist_description,
-                    iso_27001, iso_description,
-                    soc2_tsc, soc2_description,
-                    pci_dss, pci_description,
-                    ndpa, ndpa_description, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                control_id,
-                details["nist_function"],
-                details["nist_description"],
-                ", ".join(details["iso_27001"]),
-                details["iso_description"],
-                ", ".join(details["soc2_tsc"]),
-                details["soc2_description"],
-                ", ".join(details["pci_dss"]),
-                details["pci_description"],
-                ", ".join(details["ndpa"]),
-                details["ndpa_description"],
-                details["status"]
-            ))
+    INSERT INTO controls (
+        control_id, nist_function, nist_description,
+        iso_27001, iso_description,
+        soc2_tsc, soc2_description,
+        pci_dss, pci_description,
+        ndpa, ndpa_description,
+        gdpr, gdpr_description,
+        status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""", (
+    control_id,
+    details["nist_function"],
+    details["nist_description"],
+    ", ".join(details["iso_27001"]),
+    details["iso_description"],
+    ", ".join(details["soc2_tsc"]),
+    details["soc2_description"],
+    ", ".join(details["pci_dss"]),
+    details["pci_description"],
+    ", ".join(details["ndpa"]),
+    details["ndpa_description"],
+    ", ".join(details.get("gdpr", ["N/A"])),
+    details.get("gdpr_description", "Not directly applicable"),
+    details["status"]
+))
         print(f"Loaded {len(CONTROLS_DB)} controls.")
 
     # Create default admin user if no users exist

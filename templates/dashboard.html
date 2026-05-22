@@ -74,7 +74,7 @@
     <div class="topbar-left">
         <h1>AUDITRA</h1>
         <p style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;">Compliance Dashboard</p>
-        <p>NIST CSF 2.0 &nbsp;/&nbsp; ISO 27001:2022 &nbsp;/&nbsp; SOC 2 &nbsp;/&nbsp; PCI-DSS v4.0.1 &nbsp;/&nbsp; NDPA 2023 + GAID 2025</p>
+        <p>NIST CSF 2.0 &nbsp;/&nbsp; ISO 27001:2022 &nbsp;/&nbsp; SOC 2 &nbsp;/&nbsp; PCI-DSS v4.0.1 &nbsp;/&nbsp; NDPA 2023 + GAID 2025 &nbsp;/&nbsp; GDPR</p>
     </div>
     <div class="topbar-right">
         <div class="user-badge">Signed in as <span>{{ username }}</span></div>
@@ -113,6 +113,7 @@
         <button class="filter-btn" onclick="filterFramework('nist', this)">NIST CSF</button>
         <button class="filter-btn" onclick="filterFramework('pci', this)">PCI-DSS</button>
         <button class="filter-btn" onclick="filterFramework('ndpa', this)">NDPA/GAID</button>
+        <button class="filter-btn" onclick="filterFramework('gdpr', this)">GDPR</button>
     </div>
 
     <p class="section-title">Controls</p>
@@ -127,6 +128,7 @@
                     <th>SOC 2</th>
                     <th>PCI-DSS</th>
                     <th>NDPA/GAID</th>
+                    <th>GDPR</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -140,6 +142,7 @@
                     <td class="mapping">{{ row['soc2_tsc'] }}<small>{{ row['soc2_description'] }}</small></td>
                     <td class="mapping">{{ row['pci_dss'] }}<small>{{ row['pci_description'] }}</small></td>
                     <td class="mapping">{{ row['ndpa'] }}<small>{{ row['ndpa_description'] }}</small></td>
+                    <td class="mapping">{{ row['gdpr'] }}<small>{{ row['gdpr_description'] }}</small></td>
                     <td>
                         {% if role == 'admin' %}
                         <form class="status-form" method="POST" action="/update">
@@ -185,16 +188,16 @@
 
     <div class="footer">
         <span>auditra / compliance dashboard</span>
-        <span>NIST CSF 2.0 | ISO 27001:2022 | SOC 2 | PCI-DSS v4.0.1 | NDPA 2023 + GAID 2025</span>
+        <span>NIST CSF 2.0 | ISO 27001:2022 | SOC 2 | PCI-DSS v4.0.1 | NDPA 2023 + GAID 2025 | GDPR</span>
     </div>
 
     <script>
         // Framework filter: shows only rows matching the selected framework prefix
-             function filterFramework(framework, btn) {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const rows = document.querySelectorAll('#controls-table tbody tr');
-            rows.forEach(row => {
+    function filterFramework(framework, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const rows = document.querySelectorAll('#controls-table tbody tr');
+        rows.forEach(row => {
             const id = row.getAttribute('data-id').toLowerCase();
             if (framework === 'all') {
                 row.style.display = '';
@@ -202,11 +205,13 @@
                 row.style.display = id.startsWith('pci') ? '' : 'none';
             } else if (framework === 'ndpa') {
                 row.style.display = (id.startsWith('ndpa') || id.startsWith('gaid')) ? '' : 'none';
+            } else if (framework === 'gdpr') {
+                row.style.display = id.startsWith('gdpr') ? '' : 'none';
             } else if (framework === 'nist') {
-                row.style.display = (!id.startsWith('pci') && !id.startsWith('ndpa') && !id.startsWith('gaid')) ? '' : 'none';
+                row.style.display = (!id.startsWith('pci') && !id.startsWith('ndpa') && !id.startsWith('gaid') && !id.startsWith('gdpr')) ? '' : 'none';
             }
-            });
-        }
+        });
+    }
     </script>
 
 </body>

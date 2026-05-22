@@ -125,6 +125,7 @@
                     <th>SOC 2</th>
                     <th>PCI-DSS</th>
                     <th>NDPA / GAID</th>
+                    <th>GDPR</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -142,6 +143,7 @@
                     <td>{{ row['soc2_tsc'] }}<small>{{ row['soc2_description'] }}</small></td>
                     <td>{{ row['pci_dss'] }}<small>{{ row['pci_description'] }}</small></td>
                     <td>{{ row['ndpa'] }}<small>{{ row['ndpa_description'] }}</small></td>
+                    <td>{{ row['gdpr'] }}<small>{{ row['gdpr_description'] }}</small></td>
                     <td>
                         {% set s = row['status'] %}
                         {% if s == 'Compliant' %}<span class="status-badge status-compliant">Compliant</span>
