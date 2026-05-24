@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditra - Developer Activity Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; --success:#4cda8a; --warning:#f5c842; --danger:#f76f6f; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+
+        /* TOPBAR */
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
+        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; letter-spacing:.05em; }
+        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+        .topbar-right { display:flex; align-items:center; gap:12px; }
+        .back-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .back-btn:hover { border-color:var(--accent); color:var(--text); }
+        .logout-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .logout-btn:hover { border-color:var(--accent); color:var(--text); }
+
+        /* STATS CARDS */
+        .cards { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:40px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
+        .card .count { font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; line-height:1; margin-bottom:6px; color:var(--accent); }
+        .card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+        .card.danger .count  { color:var(--danger); }
+        .card.success .count { color:var(--success); }
+        .card.warning .count { color:var(--warning); }
+
+        /* FILTER BAR */
+        .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+        .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; }
+        .filter-btn:hover, .filter-btn.active { border-color:var(--accent); color:var(--accent); }
+        .filter-label { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-right:4px; }
+
+        /* TABLE */
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.1em; padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        tbody tr { border-bottom:1px solid var(--border); }
+        tbody tr:last-child { border-bottom:none; }
+        tbody tr:hover { background:rgba(79,142,247,.04); }
+        td { padding:10px 16px; vertical-align:top; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+
+        /* ACTION BADGES */
+        .action-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:600; white-space:nowrap; }
+        .action-LOGIN          { background:#1a2e5a; color:#7ab4ff; }
+        .action-LOGIN_FAILED   { background:#7a1e1e; color:#ffb3b3; }
+        .action-LOGOUT         { background:#2a2a3d; color:#9999bb; }
+        .action-PAGE_VIEW      { background:#1a3a2e; color:#7affd4; }
+        .action-EXPORT         { background:#2e1a3a; color:#d4a0ff; }
+        .action-STATUS_UPDATE  { background:#3a2e1a; color:#ffd480; }
+        .action-PASSWORD_CHANGE{ background:#1a3a3a; color:#80ffff; }
+        .action-PASSWORD_RESET { background:#3a1a3a; color:#ff80ff; }
+        .action-USER_CREATED   { background:#1a4a2e; color:#80ffaa; }
+        .action-USER_ACTIVATED { background:#1a4a2e; color:#80ffaa; }
+        .action-USER_DEACTIVATED{ background:#4a2a1a; color:#ffaa80; }
+        .action-USER_DELETED   { background:#7a1e1e; color:#ffb3b3; }
+        .action-ROLE_CHANGE    { background:#3a3a1a; color:#ffff80; }
+        .action-REGISTER       { background:#1a2e5a; color:#7ab4ff; }
+
+        .username-cell { color:var(--accent); }
+        .ip-cell { color:var(--muted); font-size:11px; }
+        .time-cell { color:var(--muted); font-size:11px; white-space:nowrap; }
+        .detail-cell { color:var(--text); font-size:11px; font-family:'IBM Plex Sans',sans-serif; }
+
+        .footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>DEVELOPER LOG</h1>
+            <p>Activity tracking &nbsp;/&nbsp; Last 200 events &nbsp;/&nbsp; Admin only</p>
+        </div>
+        <div class="topbar-right">
+            <a href="/" class="back-btn">Back to Dashboard</a>
+            <a href="/logout" class="logout-btn">Sign Out</a>
+        </div>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="cards">
+        <div class="card success">
+            <div class="count">{{ stats.total_logins }}</div>
+            <div class="label">Total Logins</div>
+        </div>
+        <div class="card">
+            <div class="count">{{ stats.unique_users }}</div>
+            <div class="label">Unique Users</div>
+        </div>
+        <div class="card danger">
+            <div class="count">{{ stats.failed_logins }}</div>
+            <div class="label">Failed Logins</div>
+        </div>
+        <div class="card warning">
+            <div class="count">{{ stats.total_exports }}</div>
+            <div class="label">Exports</div>
+        </div>
+        <div class="card">
+            <div class="count">{{ stats.total_updates }}</div>
+            <div class="label">Status Updates</div>
+        </div>
+        <div class="card">
+            <div class="count" style="font-size:16px;padding-top:4px;">{{ stats.most_active }}</div>
+            <div class="label">Most Active</div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <button class="filter-btn active" onclick="filterAction('all', this)">All</button>
+        <button class="filter-btn" onclick="filterAction('LOGIN', this)">Logins</button>
+        <button class="filter-btn" onclick="filterAction('LOGIN_FAILED', this)">Failed</button>
+        <button class="filter-btn" onclick="filterAction('EXPORT', this)">Exports</button>
+        <button class="filter-btn" onclick="filterAction('STATUS_UPDATE', this)">Updates</button>
+        <button class="filter-btn" onclick="filterAction('PAGE_VIEW', this)">Page Views</button>
+        <button class="filter-btn" onclick="filterAction('USER', this)">User Actions</button>
+    </div>
+
+    <!-- ACTIVITY LOG TABLE -->
+    <p class="section-title">Activity Log</p>
+    <div class="table-wrapper">
+        <table id="log-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Timestamp</th>
+                    <th>Username</th>
+                    <th>Action</th>
+                    <th>Detail</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in logs %}
+                <tr data-action="{{ entry['action'] }}">
+                    <td style="color:var(--muted);">{{ loop.index }}</td>
+                    <td class="time-cell">{{ entry['timestamp'] }}</td>
+                    <td class="username-cell">{{ entry['username'] }}</td>
+                    <td>
+                        <span class="action-badge action-{{ entry['action'] }}">
+                            {{ entry['action'] }}
+                        </span>
+                    </td>
+                    <td class="detail-cell">{{ entry['detail'] }}</td>
+                    <td class="ip-cell">{{ entry['ip_address'] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="color:var(--muted);text-align:center;padding:24px;">
+                        No activity recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <span>Auditra &nbsp;/&nbsp; Developer Log &nbsp;/&nbsp; Admin Only</span>
+        <span>Showing last 200 events</span>
+    </div>
+
+    <script>
+        function filterAction(action, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const rows = document.querySelectorAll('#log-table tbody tr');
+            rows.forEach(row => {
+                const rowAction = row.getAttribute('data-action') || '';
+                if (action === 'all') {
+                    row.style.display = '';
+                } else if (action === 'USER') {
+                    const userActions = ['USER_CREATED','USER_ACTIVATED','USER_DEACTIVATED','USER_DELETED','ROLE_CHANGE','REGISTER'];
+                    row.style.display = userActions.includes(rowAction) ? '' : 'none';
+                } else {
+                    row.style.display = rowAction === action ? '' : 'none';
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

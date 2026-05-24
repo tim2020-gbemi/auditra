@@ -1,5 +1,5 @@
 # database.py
-# Updated: added is_active column, user management functions.
+# Updated: added session_log table for developer-level activity tracking.
 
 import sqlite3
 import datetime
@@ -20,25 +20,24 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS controls (
-        control_id       TEXT PRIMARY KEY,
-        nist_function    TEXT,
-        nist_description TEXT,
-        iso_27001        TEXT,
-        iso_description  TEXT,
-        soc2_tsc         TEXT,
-        soc2_description TEXT,
-        pci_dss          TEXT,
-        pci_description  TEXT,
-        ndpa             TEXT,
-        ndpa_description TEXT,
-        gdpr             TEXT,
-        gdpr_description TEXT,
-        status           TEXT DEFAULT 'Not Assessed'
-    )
-""")
+        CREATE TABLE IF NOT EXISTS controls (
+            control_id       TEXT PRIMARY KEY,
+            nist_function    TEXT,
+            nist_description TEXT,
+            iso_27001        TEXT,
+            iso_description  TEXT,
+            soc2_tsc         TEXT,
+            soc2_description TEXT,
+            pci_dss          TEXT,
+            pci_description  TEXT,
+            ndpa             TEXT,
+            ndpa_description TEXT,
+            gdpr             TEXT,
+            gdpr_description TEXT,
+            status           TEXT DEFAULT 'Not Assessed'
+        )
+    """)
 
-    # is_active: 1 = account active, 0 = pending admin approval
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,40 +60,52 @@ def init_db():
         )
     """)
 
+    # Session log: developer-level activity tracking
+    # Tracks every login, logout, page visit, export, and failed login
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS session_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            username   TEXT,
+            action     TEXT,
+            detail     TEXT,
+            ip_address TEXT,
+            timestamp  TEXT
+        )
+    """)
+
     # Populate controls if empty
     cursor.execute("SELECT COUNT(*) FROM controls")
     if cursor.fetchone()[0] == 0:
         print("Initialising database with controls...")
         for control_id, details in CONTROLS_DB.items():
             cursor.execute("""
-    INSERT INTO controls (
-        control_id, nist_function, nist_description,
-        iso_27001, iso_description,
-        soc2_tsc, soc2_description,
-        pci_dss, pci_description,
-        ndpa, ndpa_description,
-        gdpr, gdpr_description,
-        status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-""", (
-    control_id,
-    details["nist_function"],
-    details["nist_description"],
-    ", ".join(details["iso_27001"]),
-    details["iso_description"],
-    ", ".join(details["soc2_tsc"]),
-    details["soc2_description"],
-    ", ".join(details["pci_dss"]),
-    details["pci_description"],
-    ", ".join(details["ndpa"]),
-    details["ndpa_description"],
-    ", ".join(details.get("gdpr", ["N/A"])),
-    details.get("gdpr_description", "Not directly applicable"),
-    details["status"]
-))
+                INSERT INTO controls (
+                    control_id, nist_function, nist_description,
+                    iso_27001, iso_description,
+                    soc2_tsc, soc2_description,
+                    pci_dss, pci_description,
+                    ndpa, ndpa_description,
+                    gdpr, gdpr_description,
+                    status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                control_id,
+                details["nist_function"],
+                details["nist_description"],
+                ", ".join(details["iso_27001"]),
+                details["iso_description"],
+                ", ".join(details["soc2_tsc"]),
+                details["soc2_description"],
+                ", ".join(details["pci_dss"]),
+                details["pci_description"],
+                ", ".join(details["ndpa"]),
+                details["ndpa_description"],
+                ", ".join(details.get("gdpr", ["N/A"])),
+                details.get("gdpr_description", "Not directly applicable"),
+                details["status"]
+            ))
         print(f"Loaded {len(CONTROLS_DB)} controls.")
 
-    # Create default admin user if no users exist
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         print("Creating default admin user...")
@@ -105,7 +116,7 @@ def init_db():
             "admin",
             generate_password_hash("admin123"),
             "admin",
-            1,  # admin is active by default
+            1,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         print("Default admin created. Username: admin / Password: admin123")
@@ -169,6 +180,101 @@ def get_audit_log():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# SESSION LOG FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def log_activity(username, action, detail, ip_address):
+    """
+    Write an activity record to the session log.
+    Called from every route in app.py.
+
+    username   = who did it (or 'anonymous' for failed logins)
+    action     = what happened (LOGIN, LOGOUT, PAGE_VIEW, EXPORT, STATUS_UPDATE, etc.)
+    detail     = extra context (which page, which export format, which control)
+    ip_address = the user's IP address from the request
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO session_log (username, action, detail, ip_address, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        username,
+        action,
+        detail,
+        ip_address,
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+
+
+def get_session_log(limit=100):
+    """Fetch the most recent session log entries, newest first."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM session_log
+        ORDER BY timestamp DESC
+        LIMIT ?
+    """, (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def get_session_stats():
+    """
+    Return summary statistics for the developer log dashboard.
+    Total logins, unique users, failed logins, exports.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Total successful logins
+    cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'LOGIN'")
+    total_logins = cursor.fetchone()[0]
+
+    # Unique users who have logged in
+    cursor.execute("SELECT COUNT(DISTINCT username) FROM session_log WHERE action = 'LOGIN'")
+    unique_users = cursor.fetchone()[0]
+
+    # Failed login attempts
+    cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'LOGIN_FAILED'")
+    failed_logins = cursor.fetchone()[0]
+
+    # Total exports
+    cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'EXPORT'")
+    total_exports = cursor.fetchone()[0]
+
+    # Total status updates
+    cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'STATUS_UPDATE'")
+    total_updates = cursor.fetchone()[0]
+
+    # Most active user
+    cursor.execute("""
+        SELECT username, COUNT(*) as count
+        FROM session_log
+        WHERE action = 'LOGIN'
+        GROUP BY username
+        ORDER BY count DESC
+        LIMIT 1
+    """)
+    row = cursor.fetchone()
+    most_active = row["username"] if row else "N/A"
+
+    conn.close()
+    return {
+        "total_logins":   total_logins,
+        "unique_users":   unique_users,
+        "failed_logins":  failed_logins,
+        "total_exports":  total_exports,
+        "total_updates":  total_updates,
+        "most_active":    most_active,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # USER FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -191,7 +297,6 @@ def get_user_by_id(user_id):
 
 
 def get_all_users():
-    """Fetch all users. Used by admin on user management page."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
@@ -201,10 +306,6 @@ def get_all_users():
 
 
 def verify_password(username, password):
-    """
-    Check credentials. Returns user only if password matches AND account is active.
-    Inactive accounts get a specific message so user knows to wait for approval.
-    """
     user = get_user_by_username(username)
     if not user:
         return None, "invalid"
@@ -216,10 +317,6 @@ def verify_password(username, password):
 
 
 def register_user(username, password):
-    """
-    Create a new user account. is_active=0 so admin must approve first.
-    Returns True on success, False if username already exists.
-    """
     if get_user_by_username(username):
         return False, "Username already exists."
     if len(password) < 8:
@@ -233,8 +330,8 @@ def register_user(username, password):
         """, (
             username,
             generate_password_hash(password),
-            "viewer",   # all self-registered users start as viewer
-            0,          # inactive until admin approves
+            "viewer",
+            0,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()
@@ -246,7 +343,6 @@ def register_user(username, password):
 
 
 def create_user_by_admin(username, password, role):
-    """Admin creates a user directly. Account is active immediately."""
     if get_user_by_username(username):
         return False, "Username already exists."
     if len(password) < 8:
@@ -261,7 +357,7 @@ def create_user_by_admin(username, password, role):
             username,
             generate_password_hash(password),
             role,
-            1,  # admin-created accounts are active immediately
+            1,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()
@@ -273,7 +369,6 @@ def create_user_by_admin(username, password, role):
 
 
 def activate_user(user_id):
-    """Admin approves a pending registration."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET is_active = 1 WHERE id = ?", (user_id,))
@@ -282,7 +377,6 @@ def activate_user(user_id):
 
 
 def deactivate_user(user_id):
-    """Admin deactivates an account without deleting it."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET is_active = 0 WHERE id = ?", (user_id,))
@@ -291,7 +385,6 @@ def deactivate_user(user_id):
 
 
 def update_user_role(user_id, new_role):
-    """Admin changes a user's role."""
     if new_role not in ["admin", "viewer"]:
         return False
     conn = get_connection()
@@ -303,10 +396,6 @@ def update_user_role(user_id, new_role):
 
 
 def change_password(user_id, current_password, new_password):
-    """
-    User changes their own password.
-    Verifies current password before allowing the change.
-    """
     user = get_user_by_id(user_id)
     if not user:
         return False, "User not found."
@@ -326,7 +415,6 @@ def change_password(user_id, current_password, new_password):
 
 
 def admin_reset_password(user_id, new_password):
-    """Admin resets any user's password without needing the current one."""
     if len(new_password) < 8:
         return False, "Password must be at least 8 characters."
     conn = get_connection()
@@ -341,7 +429,6 @@ def admin_reset_password(user_id, new_password):
 
 
 def delete_user(user_id):
-    """Admin permanently deletes a user account."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
