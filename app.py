@@ -370,7 +370,7 @@ def devlog():
     if not logged_in() or not is_admin():
         return redirect(url_for("dashboard"))
     log_activity(session["username"], "PAGE_VIEW", "Viewed developer activity log", get_ip())
-    logs  = get_session_log(limit=200)
+    logs  = get_session_log(limit=1000)
     stats = get_session_stats()
     return render_template(
         "devlog.html",
