@@ -164,9 +164,17 @@
     </div>
 
     <div class="footer">
-        <span>Auditra &nbsp;/&nbsp; Developer Log &nbsp;/&nbsp; Admin Only</span>
+    <span>Auditra &nbsp;/&nbsp; Developer Log &nbsp;/&nbsp; Admin Only</span>
+    <div style="display:flex;align-items:center;gap:16px;">
         <span>Showing last 1000 events</span>
+        <form method="POST" action="/devlog/clear"
+              onsubmit="return confirm('Clear all session logs? This cannot be undone.')">
+            <button type="submit" style="background:#7a1e1e;color:#ffb3b3;border:none;border-radius:4px;padding:4px 12px;font-family:IBM Plex Mono,monospace;font-size:11px;cursor:pointer;">
+                Clear All Logs
+            </button>
+        </form>
     </div>
+</div>
 
     <script>
         function filterAction(action, btn) {

@@ -7,6 +7,7 @@ import io
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from xhtml2pdf import pisa
 from database import (
+     init_db, get_connection, get_all_controls, update_status, get_summary, get_audit_log,
     init_db, get_all_controls, update_status, get_summary, get_audit_log,
     verify_password, register_user, create_user_by_admin, get_all_users,
     activate_user, deactivate_user, update_user_role, change_password,
@@ -380,6 +381,22 @@ def devlog():
         role=session["role"]
     )
 
+@app.route("/devlog/clear", methods=["POST"])
+def clear_devlog():
+    """
+    Clear all session log entries.
+    One-time cleanup tool for removing test data before going live.
+    Admin only.
+    """
+    if not logged_in() or not is_admin():
+        return redirect(url_for("dashboard"))
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM session_log")
+    conn.commit()
+    conn.close()
+    log_activity(session["username"], "LOG_CLEARED", "Session log cleared by admin", get_ip())
+    return redirect(url_for("devlog"))
 
 if __name__ == "__main__":
     app.run(debug=True)
