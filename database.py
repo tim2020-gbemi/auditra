@@ -1,5 +1,5 @@
 # database.py
-# Updated: added session_log table for developer-level activity tracking.
+# Updated: added assets and vulnerabilities tables for vulnerability tracker.
 
 import sqlite3
 import datetime
@@ -60,8 +60,6 @@ def init_db():
         )
     """)
 
-    # Session log: developer-level activity tracking
-    # Tracks every login, logout, page visit, export, and failed login
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS session_log (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +68,37 @@ def init_db():
             detail     TEXT,
             ip_address TEXT,
             timestamp  TEXT
+        )
+    """)
+
+    # Assets table: tracks organizational assets that vulnerabilities are logged against
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS assets (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            name          TEXT NOT NULL,
+            category      TEXT NOT NULL,
+            description   TEXT,
+            owner         TEXT,
+            created_at    TEXT
+        )
+    """)
+
+    # Vulnerabilities table: CVEs logged against assets with risk ratings
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vulnerabilities (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id        INTEGER NOT NULL,
+            cve_id          TEXT,
+            cvss_score      REAL,
+            risk_rating     TEXT,
+            description     TEXT,
+            affected_system TEXT,
+            status          TEXT DEFAULT 'Open',
+            identified_date TEXT,
+            resolved_date   TEXT,
+            assigned_to     TEXT,
+            created_at      TEXT,
+            FOREIGN KEY (asset_id) REFERENCES assets (id)
         )
     """)
 
@@ -184,94 +213,237 @@ def get_audit_log():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def log_activity(username, action, detail, ip_address):
-    """
-    Write an activity record to the session log.
-    Called from every route in app.py.
-
-    username   = who did it (or 'anonymous' for failed logins)
-    action     = what happened (LOGIN, LOGOUT, PAGE_VIEW, EXPORT, STATUS_UPDATE, etc.)
-    detail     = extra context (which page, which export format, which control)
-    ip_address = the user's IP address from the request
-    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO session_log (username, action, detail, ip_address, timestamp)
         VALUES (?, ?, ?, ?, ?)
     """, (
-        username,
-        action,
-        detail,
-        ip_address,
+        username, action, detail, ip_address,
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
     conn.commit()
     conn.close()
 
 
-def get_session_log(limit=100):
-    """Fetch the most recent session log entries, newest first."""
+def get_session_log(limit=1000):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM session_log
-        ORDER BY timestamp DESC
-        LIMIT ?
-    """, (limit,))
+    cursor.execute("SELECT * FROM session_log ORDER BY timestamp DESC LIMIT ?", (limit,))
     rows = cursor.fetchall()
     conn.close()
     return rows
 
 
 def get_session_stats():
-    """
-    Return summary statistics for the developer log dashboard.
-    Total logins, unique users, failed logins, exports.
-    """
     conn = get_connection()
     cursor = conn.cursor()
-
-    # Total successful logins
     cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'LOGIN'")
     total_logins = cursor.fetchone()[0]
-
-    # Unique users who have logged in
     cursor.execute("SELECT COUNT(DISTINCT username) FROM session_log WHERE action = 'LOGIN'")
     unique_users = cursor.fetchone()[0]
-
-    # Failed login attempts
     cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'LOGIN_FAILED'")
     failed_logins = cursor.fetchone()[0]
-
-    # Total exports
     cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'EXPORT'")
     total_exports = cursor.fetchone()[0]
-
-    # Total status updates
     cursor.execute("SELECT COUNT(*) FROM session_log WHERE action = 'STATUS_UPDATE'")
     total_updates = cursor.fetchone()[0]
-
-    # Most active user
     cursor.execute("""
-        SELECT username, COUNT(*) as count
-        FROM session_log
-        WHERE action = 'LOGIN'
-        GROUP BY username
-        ORDER BY count DESC
-        LIMIT 1
+        SELECT username, COUNT(*) as count FROM session_log
+        WHERE action = 'LOGIN' GROUP BY username ORDER BY count DESC LIMIT 1
     """)
     row = cursor.fetchone()
     most_active = row["username"] if row else "N/A"
-
     conn.close()
     return {
-        "total_logins":   total_logins,
-        "unique_users":   unique_users,
-        "failed_logins":  failed_logins,
-        "total_exports":  total_exports,
-        "total_updates":  total_updates,
-        "most_active":    most_active,
+        "total_logins": total_logins, "unique_users": unique_users,
+        "failed_logins": failed_logins, "total_exports": total_exports,
+        "total_updates": total_updates, "most_active": most_active,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASSET FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_all_assets():
+    """Fetch all assets, ordered by most recently created."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM assets ORDER BY created_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def get_asset_by_id(asset_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM assets WHERE id = ?", (asset_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def create_asset(name, category, description, owner):
+    """Add a new asset. Returns the new asset's ID."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO assets (name, category, description, owner, created_at)
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        name, category, description, owner,
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return new_id
+
+
+def delete_asset(asset_id):
+    """Delete an asset and all its associated vulnerabilities."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM vulnerabilities WHERE asset_id = ?", (asset_id,))
+    cursor.execute("DELETE FROM assets WHERE id = ?", (asset_id,))
+    conn.commit()
+    conn.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VULNERABILITY FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def calculate_risk_rating(cvss_score):
+    """
+    Convert a CVSS score (0.0 - 10.0) into a risk rating category.
+    Standard CVSS v3.1 severity ranges.
+    """
+    if cvss_score is None:
+        return "Unrated"
+    if cvss_score >= 9.0:
+        return "Critical"
+    elif cvss_score >= 7.0:
+        return "High"
+    elif cvss_score >= 4.0:
+        return "Medium"
+    elif cvss_score > 0:
+        return "Low"
+    else:
+        return "Unrated"
+
+
+def get_all_vulnerabilities():
+    """
+    Fetch all vulnerabilities joined with their asset details.
+    Ordered by CVSS score descending so highest risk shows first.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            vulnerabilities.*,
+            assets.name AS asset_name,
+            assets.category AS asset_category
+        FROM vulnerabilities
+        JOIN assets ON vulnerabilities.asset_id = assets.id
+        ORDER BY vulnerabilities.cvss_score DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def get_vulnerability_by_id(vuln_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT vulnerabilities.*, assets.name AS asset_name, assets.category AS asset_category
+        FROM vulnerabilities
+        JOIN assets ON vulnerabilities.asset_id = assets.id
+        WHERE vulnerabilities.id = ?
+    """, (vuln_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def create_vulnerability(asset_id, cve_id, cvss_score, description, affected_system,
+                          identified_date, assigned_to):
+    """Add a new vulnerability. Risk rating is auto-calculated from CVSS score."""
+    risk_rating = calculate_risk_rating(cvss_score)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO vulnerabilities (
+            asset_id, cve_id, cvss_score, risk_rating, description,
+            affected_system, status, identified_date, resolved_date,
+            assigned_to, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        asset_id, cve_id, cvss_score, risk_rating, description,
+        affected_system, "Open", identified_date, None,
+        assigned_to, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+
+
+def update_vulnerability_status(vuln_id, new_status):
+    """
+    Update a vulnerability's remediation status.
+    If marked Resolved, automatically sets resolved_date to today.
+    """
+    valid_statuses = ["Open", "In Progress", "Resolved", "Accepted Risk"]
+    if new_status not in valid_statuses:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    if new_status == "Resolved":
+        cursor.execute("""
+            UPDATE vulnerabilities SET status = ?, resolved_date = ? WHERE id = ?
+        """, (new_status, datetime.date.today().strftime("%Y-%m-%d"), vuln_id))
+    else:
+        cursor.execute("UPDATE vulnerabilities SET status = ? WHERE id = ?", (new_status, vuln_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def delete_vulnerability(vuln_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM vulnerabilities WHERE id = ?", (vuln_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_vulnerability_summary():
+    """Count vulnerabilities by risk rating for the summary cards."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT risk_rating, COUNT(*) as count FROM vulnerabilities GROUP BY risk_rating")
+    rows = cursor.fetchall()
+    conn.close()
+    summary = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Unrated": 0}
+    for row in rows:
+        summary[row["risk_rating"]] = row["count"]
+    return summary
+
+
+def get_vulnerability_status_summary():
+    """Count vulnerabilities by remediation status."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT status, COUNT(*) as count FROM vulnerabilities GROUP BY status")
+    rows = cursor.fetchall()
+    conn.close()
+    summary = {"Open": 0, "In Progress": 0, "Resolved": 0, "Accepted Risk": 0}
+    for row in rows:
+        summary[row["status"]] = row["count"]
+    return summary
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -328,10 +500,7 @@ def register_user(username, password):
             INSERT INTO users (username, password_hash, role, is_active, created_at)
             VALUES (?, ?, ?, ?, ?)
         """, (
-            username,
-            generate_password_hash(password),
-            "viewer",
-            0,
+            username, generate_password_hash(password), "viewer", 0,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()
@@ -354,10 +523,7 @@ def create_user_by_admin(username, password, role):
             INSERT INTO users (username, password_hash, role, is_active, created_at)
             VALUES (?, ?, ?, ?, ?)
         """, (
-            username,
-            generate_password_hash(password),
-            role,
-            1,
+            username, generate_password_hash(password), role, 1,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()

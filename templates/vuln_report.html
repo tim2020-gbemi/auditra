@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vulnerability Report</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 18mm 14mm 18mm 14mm;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a2e; background: #ffffff; }
+
+        /* HEADER - real table for reliable side-by-side layout */
+        .header-table { width: 100%; border-collapse: collapse; border-bottom: 3px solid #4f8ef7; padding-bottom: 14px; margin-bottom: 20px; }
+        .header-table td { vertical-align: bottom; padding-bottom: 14px; }
+        .cover-header-right { text-align: right; }
+        .cover-header h1 { font-size: 22px; font-weight: bold; color: #0d0d1a; letter-spacing: 0.08em; margin-bottom: 4px; }
+        .cover-header .sub { font-size: 10px; color: #666; letter-spacing: 0.04em; }
+        .cover-header .meta { font-size: 10px; color: #888; line-height: 1.8; }
+        .cover-header .meta strong { color: #444; }
+
+        /* SUMMARY CARDS - real table for reliable horizontal layout in PDF */
+        .cards-table { width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 16px; }
+        .cards-table td { border: 1px solid #d0d8f0; border-radius: 5px; padding: 12px 8px; text-align: center; background: #f9faff; width: 20%; }
+        .cards-table .count { font-size: 26px; font-weight: bold; line-height: 1; margin-bottom: 4px; display: block; }
+        .cards-table .label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; display: block; }
+        .cards-table .total    .count { color: #4f8ef7; }
+        .cards-table .critical .count { color: #c0302a; }
+        .cards-table .high     .count { color: #d9701e; }
+        .cards-table .medium   .count { color: #a07000; }
+        .cards-table .low      .count { color: #1a7a4a; }
+
+        /* STATUS ROW - real table */
+        .status-table { width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 24px; }
+        .status-table td { border: 1px solid #d0d8f0; border-radius: 5px; padding: 10px 8px; text-align: center; background: #f4f7ff; width: 25%; }
+        .status-table .count { font-size: 18px; font-weight: bold; display: block; }
+        .status-table .label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-top: 3px; display: block; }
+
+        /* SECTION TITLE */
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #4f8ef7; font-weight: bold; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e0e8ff; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        thead th { background: #1a2a5a; color: #c8d8ff; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px; text-align: left; border: 1px solid #243070; }
+        tbody tr { page-break-inside: avoid; }
+        tbody tr:nth-child(even) { background: #f4f7ff; }
+        tbody tr:nth-child(odd)  { background: #ffffff; }
+        td { padding: 7px 8px; vertical-align: top; font-size: 9px; border: 1px solid #dde4f5; line-height: 1.5; word-wrap: break-word; }
+
+        .col-asset  { width: 14%; }
+        .col-cve    { width: 12%; }
+        .col-cvss   { width: 6%; }
+        .col-risk   { width: 8%; }
+        .col-desc   { width: 24%; }
+        .col-system { width: 12%; }
+        .col-date   { width: 8%; }
+        .col-status { width: 8%; }
+
+        .cve-id { font-weight: bold; color: #2255bb; font-size: 9px; }
+
+        .risk-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 8px; font-weight: bold; white-space: nowrap; }
+        .risk-critical { background: #fdd; color: #c0302a; border: 1px solid #e09090; }
+        .risk-high     { background: #ffe4cc; color: #b85c00; border: 1px solid #e0b070; }
+        .risk-medium   { background: #fff0c0; color: #a07000; border: 1px solid #e0cc70; }
+        .risk-low      { background: #d4f0e0; color: #1a7a4a; border: 1px solid #a0dbb8; }
+        .risk-unrated  { background: #eee; color: #777; border: 1px solid #ccc; }
+
+        .status-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 8px; font-weight: bold; white-space: nowrap; }
+        .status-open      { background: #fdd; color: #c0302a; }
+        .status-inprogress{ background: #fff0c0; color: #a07000; }
+        .status-resolved  { background: #d4f0e0; color: #1a7a4a; }
+        .status-accepted  { background: #eee; color: #777; }
+
+        .report-footer { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .report-footer td { padding-top: 10px; border-top: 1px solid #c8d4f0; font-size: 9px; color: #aaa; }
+        .footer-right { text-align: right; }
+
+        thead { display: table-header-group; }
+    </style>
+</head>
+<body>
+
+    <!-- COVER HEADER -->
+    <table class="header-table">
+        <tr>
+            <td style="width:60%;">
+                <h1>AUDITRA</h1>
+                <div class="sub" style="font-size:13px;color:#444;margin-top:2px;">Vulnerability Report</div>
+            </td>
+            <td class="cover-header-right" style="width:40%;">
+                <div class="meta">
+                    <strong>Generated:</strong> {{ date }}<br>
+                    <strong>Prepared by:</strong> {{ username }}<br>
+                    <strong>Classification:</strong> Confidential
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- RISK SUMMARY CARDS -->
+    <table class="cards-table">
+        <tr>
+            <td class="total">
+                <span class="count">{{ total_vulns }}</span>
+                <span class="label">Total Vulns</span>
+            </td>
+            <td class="critical">
+                <span class="count">{{ risk_summary['Critical'] }}</span>
+                <span class="label">Critical</span>
+            </td>
+            <td class="high">
+                <span class="count">{{ risk_summary['High'] }}</span>
+                <span class="label">High</span>
+            </td>
+            <td class="medium">
+                <span class="count">{{ risk_summary['Medium'] }}</span>
+                <span class="label">Medium</span>
+            </td>
+            <td class="low">
+                <span class="count">{{ risk_summary['Low'] }}</span>
+                <span class="label">Low</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- STATUS SUMMARY -->
+    <table class="status-table">
+        <tr>
+            <td>
+                <span class="count">{{ status_summary['Open'] }}</span>
+                <span class="label">Open</span>
+            </td>
+            <td>
+                <span class="count">{{ status_summary['In Progress'] }}</span>
+                <span class="label">In Progress</span>
+            </td>
+            <td>
+                <span class="count">{{ status_summary['Resolved'] }}</span>
+                <span class="label">Resolved</span>
+            </td>
+            <td>
+                <span class="count">{{ status_summary['Accepted Risk'] }}</span>
+                <span class="label">Accepted Risk</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- VULNERABILITIES TABLE -->
+    <div class="section-title">Vulnerability Register</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-asset">Asset</th>
+                <th class="col-cve">CVE ID</th>
+                <th class="col-cvss">CVSS</th>
+                <th class="col-risk">Risk</th>
+                <th class="col-desc">Description</th>
+                <th class="col-system">Affected System</th>
+                <th class="col-date">Identified</th>
+                <th class="col-status">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vulns %}
+            <tr>
+                <td>{{ v['asset_name'] }}<br><span style="color:#999;font-size:8px;">{{ v['asset_category'] }}</span></td>
+                <td class="cve-id">{{ v['cve_id'] or '—' }}</td>
+                <td>{{ v['cvss_score'] if v['cvss_score'] is not none else '—' }}</td>
+                <td>
+                    {% set r = v['risk_rating'] %}
+                    {% if r == 'Critical' %}<span class="risk-badge risk-critical">Critical</span>
+                    {% elif r == 'High' %}<span class="risk-badge risk-high">High</span>
+                    {% elif r == 'Medium' %}<span class="risk-badge risk-medium">Medium</span>
+                    {% elif r == 'Low' %}<span class="risk-badge risk-low">Low</span>
+                    {% else %}<span class="risk-badge risk-unrated">Unrated</span>
+                    {% endif %}
+                </td>
+                <td>{{ v['description'] or '—' }}</td>
+                <td>{{ v['affected_system'] or '—' }}</td>
+                <td>{{ v['identified_date'] or '—' }}</td>
+                <td>
+                    {% set s = v['status'] %}
+                    {% if s == 'Open' %}<span class="status-badge status-open">Open</span>
+                    {% elif s == 'In Progress' %}<span class="status-badge status-inprogress">In Progress</span>
+                    {% elif s == 'Resolved' %}<span class="status-badge status-resolved">Resolved</span>
+                    {% else %}<span class="status-badge status-accepted">Accepted Risk</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align:center;color:#aaa;padding:16px;">No vulnerabilities logged yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- FOOTER -->
+    <table class="report-footer">
+        <tr>
+            <td style="width:70%;">Auditra &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Not for external distribution without authorization</td>
+            <td class="footer-right" style="width:30%;">Report Date: {{ date }}</td>
+        </tr>
+    </table>
+
+</body>
+</html>

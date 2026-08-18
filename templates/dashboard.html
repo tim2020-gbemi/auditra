@@ -80,7 +80,8 @@
         <div class="user-badge">Signed in as <span>{{ username }}</span></div>
         <span class="role-badge role-{{ role }}">{{ role | upper }}</span>
         <a href="/change-password" class="logout-btn">Change Password</a>
-        {% if role == 'admin' %}<a href="/users" class="logout-btn">Users</a>{% endif %}
+        {% if role == 'admin' %}<a href="/users" class="logout-btn">Users</a>{% endif %} 
+        <a href="/vulnerabilities" class="logout-btn">Vulnerabilities</a>
         <a href="/pdf" class="pdf-btn">Download PDF</a>
         <a href="/csv" class="pdf-btn">Download CSV</a>
         <a href="/html-export" class="pdf-btn">Download HTML</a>

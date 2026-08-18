@@ -1,5 +1,5 @@
 # app.py
-# Updated: added session logging on every route.
+# Updated: added vulnerability tracker routes.
 
 import datetime
 import csv
@@ -7,16 +7,19 @@ import io
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from xhtml2pdf import pisa
 from database import (
-     init_db, get_connection, get_all_controls, update_status, get_summary, get_audit_log,
-    init_db, get_all_controls, update_status, get_summary, get_audit_log,
+    init_db, get_connection, get_all_controls, update_status, get_summary, get_audit_log,
     verify_password, register_user, create_user_by_admin, get_all_users,
     activate_user, deactivate_user, update_user_role, change_password,
     admin_reset_password, delete_user, get_user_by_id,
-    log_activity, get_session_log, get_session_stats
+    log_activity, get_session_log, get_session_stats,
+    get_all_assets, get_asset_by_id, create_asset, delete_asset,
+    get_all_vulnerabilities, get_vulnerability_by_id, create_vulnerability,
+    update_vulnerability_status, delete_vulnerability,
+    get_vulnerability_summary, get_vulnerability_status_summary
 )
 
 app = Flask(__name__)
-app.secret_key = "auditra-secret-key-change-in-production"
+app.secret_key = "auditra-production-secret-key-x9k2mP7qL4nR"
 
 init_db()
 
@@ -32,7 +35,6 @@ def is_admin():
     return session.get("role") == "admin"
 
 def get_ip():
-    """Get the real IP address of the request."""
     return request.headers.get("X-Forwarded-For", request.remote_addr)
 
 
@@ -112,13 +114,9 @@ def dashboard():
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
     return render_template(
         "dashboard.html",
-        controls=controls,
-        summary=summary,
-        audit_log=audit_log,
-        score=score,
-        total=total,
-        username=session["username"],
-        role=session["role"]
+        controls=controls, summary=summary, audit_log=audit_log,
+        score=score, total=total,
+        username=session["username"], role=session["role"]
     )
 
 
@@ -131,15 +129,12 @@ def update():
     control_id = request.form.get("control_id")
     new_status  = request.form.get("status")
     update_status(control_id, new_status, session["username"])
-    log_activity(
-        session["username"], "STATUS_UPDATE",
-        f"Updated {control_id} to {new_status}", get_ip()
-    )
+    log_activity(session["username"], "STATUS_UPDATE", f"Updated {control_id} to {new_status}", get_ip())
     return redirect(url_for("dashboard"))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# EXPORTS
+# COMPLIANCE EXPORTS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/pdf")
@@ -153,15 +148,12 @@ def export_pdf():
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
     date      = datetime.date.today().strftime("%Y-%m-%d")
     html_string = render_template(
-        "report.html",
-        controls=controls, summary=summary,
-        score=score, total=total,
-        date=date, username=session["username"]
+        "report.html", controls=controls, summary=summary,
+        score=score, total=total, date=date, username=session["username"]
     )
     pdf_buffer = io.BytesIO()
     pisa.CreatePDF(html_string, dest=pdf_buffer)
-    pdf_bytes = pdf_buffer.getvalue()
-    response = make_response(pdf_bytes)
+    response = make_response(pdf_buffer.getvalue())
     response.headers["Content-Type"]        = "application/pdf"
     response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.pdf"
     return response
@@ -177,23 +169,16 @@ def export_csv():
     output   = io.StringIO()
     writer   = csv.writer(output)
     writer.writerow([
-        "Control ID", "NIST Function", "NIST Description",
-        "ISO 27001", "ISO Detail",
-        "SOC 2 TSC", "SOC 2 Detail",
-        "PCI-DSS", "PCI Detail",
-        "NDPA/GAID", "NDPA Detail",
-        "GDPR", "GDPR Detail",
-        "Status"
+        "Control ID", "NIST Function", "NIST Description", "ISO 27001", "ISO Detail",
+        "SOC 2 TSC", "SOC 2 Detail", "PCI-DSS", "PCI Detail",
+        "NDPA/GAID", "NDPA Detail", "GDPR", "GDPR Detail", "Status"
     ])
     for row in controls:
         writer.writerow([
             row["control_id"], row["nist_function"], row["nist_description"],
-            row["iso_27001"], row["iso_description"],
-            row["soc2_tsc"], row["soc2_description"],
-            row["pci_dss"], row["pci_description"],
-            row["ndpa"], row["ndpa_description"],
-            row["gdpr"], row["gdpr_description"],
-            row["status"]
+            row["iso_27001"], row["iso_description"], row["soc2_tsc"], row["soc2_description"],
+            row["pci_dss"], row["pci_description"], row["ndpa"], row["ndpa_description"],
+            row["gdpr"], row["gdpr_description"], row["status"]
         ])
     response = make_response(output.getvalue())
     response.headers["Content-Type"]        = "text/csv"
@@ -212,14 +197,160 @@ def export_html():
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
     date      = datetime.date.today().strftime("%Y-%m-%d")
     html_string = render_template(
-        "report_html.html",
-        controls=controls, summary=summary,
-        score=score, total=total,
-        date=date, username=session["username"]
+        "report_html.html", controls=controls, summary=summary,
+        score=score, total=total, date=date, username=session["username"]
     )
     response = make_response(html_string)
     response.headers["Content-Type"]        = "text/html"
     response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.html"
+    return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VULNERABILITY TRACKER
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/vulnerabilities")
+def vulnerabilities():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "PAGE_VIEW", "Viewed vulnerability dashboard", get_ip())
+    vulns         = get_all_vulnerabilities()
+    assets        = get_all_assets()
+    risk_summary  = get_vulnerability_summary()
+    status_summary = get_vulnerability_status_summary()
+    total_vulns   = len(vulns)
+    open_count    = status_summary["Open"] + status_summary["In Progress"]
+    return render_template(
+        "vulnerabilities.html",
+        vulns=vulns, assets=assets,
+        risk_summary=risk_summary, status_summary=status_summary,
+        total_vulns=total_vulns, open_count=open_count,
+        username=session["username"], role=session["role"]
+    )
+
+
+@app.route("/assets/create", methods=["POST"])
+def create_asset_route():
+    if not logged_in() or not is_admin():
+        return redirect(url_for("vulnerabilities"))
+    name        = request.form.get("name", "").strip()
+    category    = request.form.get("category", "").strip()
+    description = request.form.get("description", "").strip()
+    owner       = request.form.get("owner", "").strip()
+    if name and category:
+        asset_id = create_asset(name, category, description, owner)
+        log_activity(session["username"], "ASSET_CREATED", f"Created asset: {name} ({category})", get_ip())
+    return redirect(url_for("vulnerabilities"))
+
+
+@app.route("/assets/delete/<int:asset_id>")
+def delete_asset_route(asset_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("vulnerabilities"))
+    asset = get_asset_by_id(asset_id)
+    if asset:
+        log_activity(session["username"], "ASSET_DELETED", f"Deleted asset: {asset['name']}", get_ip())
+    delete_asset(asset_id)
+    return redirect(url_for("vulnerabilities"))
+
+
+@app.route("/vulnerabilities/create", methods=["POST"])
+def create_vulnerability_route():
+    if not logged_in() or not is_admin():
+        return redirect(url_for("vulnerabilities"))
+    asset_id        = request.form.get("asset_id")
+    cve_id          = request.form.get("cve_id", "").strip()
+    cvss_score_raw  = request.form.get("cvss_score", "").strip()
+    description     = request.form.get("description", "").strip()
+    affected_system = request.form.get("affected_system", "").strip()
+    identified_date = request.form.get("identified_date", "").strip()
+    assigned_to     = request.form.get("assigned_to", "").strip()
+
+    cvss_score = None
+    if cvss_score_raw:
+        try:
+            cvss_score = float(cvss_score_raw)
+        except ValueError:
+            cvss_score = None
+
+    if asset_id:
+        create_vulnerability(
+            int(asset_id), cve_id, cvss_score, description,
+            affected_system, identified_date, assigned_to
+        )
+        log_activity(
+            session["username"], "VULN_CREATED",
+            f"Logged vulnerability: {cve_id or 'No CVE ID'} on asset ID {asset_id}", get_ip()
+        )
+    return redirect(url_for("vulnerabilities"))
+
+
+@app.route("/vulnerabilities/update-status/<int:vuln_id>", methods=["POST"])
+def update_vulnerability_status_route(vuln_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("vulnerabilities"))
+    new_status = request.form.get("status", "").strip()
+    update_vulnerability_status(vuln_id, new_status)
+    log_activity(session["username"], "VULN_STATUS_UPDATE", f"Updated vuln #{vuln_id} to {new_status}", get_ip())
+    return redirect(url_for("vulnerabilities"))
+
+
+@app.route("/vulnerabilities/delete/<int:vuln_id>")
+def delete_vulnerability_route(vuln_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("vulnerabilities"))
+    delete_vulnerability(vuln_id)
+    log_activity(session["username"], "VULN_DELETED", f"Deleted vulnerability #{vuln_id}", get_ip())
+    return redirect(url_for("vulnerabilities"))
+
+
+@app.route("/vulnerabilities/pdf")
+def export_vuln_pdf():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "EXPORT", "Downloaded PDF vulnerability report", get_ip())
+    vulns          = get_all_vulnerabilities()
+    risk_summary   = get_vulnerability_summary()
+    status_summary = get_vulnerability_status_summary()
+    total_vulns    = len(vulns)
+    date           = datetime.date.today().strftime("%Y-%m-%d")
+    html_string = render_template(
+        "vuln_report.html",
+        vulns=vulns, risk_summary=risk_summary, status_summary=status_summary,
+        total_vulns=total_vulns, date=date, username=session["username"]
+    )
+    pdf_buffer = io.BytesIO()
+    pisa.CreatePDF(html_string, dest=pdf_buffer)
+    response = make_response(pdf_buffer.getvalue())
+    response.headers["Content-Type"]        = "application/pdf"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_vuln_report_{date}.pdf"
+    return response
+
+
+@app.route("/vulnerabilities/csv")
+def export_vuln_csv():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "EXPORT", "Downloaded CSV vulnerability report", get_ip())
+    vulns  = get_all_vulnerabilities()
+    date   = datetime.date.today().strftime("%Y-%m-%d")
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Asset", "Category", "CVE ID", "CVSS Score", "Risk Rating",
+        "Description", "Affected System", "Status",
+        "Identified Date", "Resolved Date", "Assigned To"
+    ])
+    for v in vulns:
+        writer.writerow([
+            v["asset_name"], v["asset_category"], v["cve_id"], v["cvss_score"],
+            v["risk_rating"], v["description"], v["affected_system"], v["status"],
+            v["identified_date"], v["resolved_date"], v["assigned_to"]
+        ])
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"]        = "text/csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_vuln_report_{date}.csv"
     return response
 
 
@@ -248,8 +379,7 @@ def change_password_route():
             else:
                 error = message
     return render_template(
-        "change_password.html",
-        error=error, success=success,
+        "change_password.html", error=error, success=success,
         username=session["username"], role=session["role"]
     )
 
@@ -264,12 +394,7 @@ def users():
         return redirect(url_for("dashboard"))
     log_activity(session["username"], "PAGE_VIEW", "Viewed user management page", get_ip())
     all_users = get_all_users()
-    return render_template(
-        "users.html",
-        users=all_users,
-        username=session["username"],
-        role=session["role"]
-    )
+    return render_template("users.html", users=all_users, username=session["username"], role=session["role"])
 
 
 @app.route("/users/create", methods=["POST"])
@@ -284,12 +409,8 @@ def create_user():
         log_activity(session["username"], "USER_CREATED", f"Created user: {username} ({role})", get_ip())
     all_users = get_all_users()
     return render_template(
-        "users.html",
-        users=all_users,
-        username=session["username"],
-        role=session["role"],
-        error=None if ok else message,
-        success="User created successfully." if ok else None
+        "users.html", users=all_users, username=session["username"], role=session["role"],
+        error=None if ok else message, success="User created successfully." if ok else None
     )
 
 
@@ -340,12 +461,8 @@ def reset_user_password(user_id):
         log_activity(session["username"], "PASSWORD_RESET", f"Reset password for: {user['username']}", get_ip())
     all_users = get_all_users()
     return render_template(
-        "users.html",
-        users=all_users,
-        username=session["username"],
-        role=session["role"],
-        error=None if ok else message,
-        success=message if ok else None
+        "users.html", users=all_users, username=session["username"], role=session["role"],
+        error=None if ok else message, success=message if ok else None
     )
 
 
@@ -363,7 +480,7 @@ def remove_user(user_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DEVELOPER LOG (admin only)
+# DEVELOPER LOG
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/devlog")
@@ -373,21 +490,11 @@ def devlog():
     log_activity(session["username"], "PAGE_VIEW", "Viewed developer activity log", get_ip())
     logs  = get_session_log(limit=1000)
     stats = get_session_stats()
-    return render_template(
-        "devlog.html",
-        logs=logs,
-        stats=stats,
-        username=session["username"],
-        role=session["role"]
-    )
+    return render_template("devlog.html", logs=logs, stats=stats, username=session["username"], role=session["role"])
+
 
 @app.route("/devlog/clear", methods=["POST"])
 def clear_devlog():
-    """
-    Clear all session log entries.
-    One-time cleanup tool for removing test data before going live.
-    Admin only.
-    """
     if not logged_in() or not is_admin():
         return redirect(url_for("dashboard"))
     conn = get_connection()
@@ -397,6 +504,7 @@ def clear_devlog():
     conn.close()
     log_activity(session["username"], "LOG_CLEARED", "Session log cleared by admin", get_ip())
     return redirect(url_for("devlog"))
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditra - Vulnerability Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+
+        /* TOPBAR */
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px; }
+        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; letter-spacing:.05em; }
+        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+        .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .btn-link { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .btn-link:hover { border-color:var(--accent); color:var(--text); }
+        .btn-accent { background:var(--accent); color:#fff; border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .btn-accent:hover { opacity:.85; }
+
+        /* SCORE / SUMMARY CARDS */
+        .cards { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:16px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
+        .card .count { font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:600; line-height:1; margin-bottom:6px; }
+        .card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+        .card.critical .count { color:#f76f6f; }
+        .card.high     .count { color:#ff9e5c; }
+        .card.medium   .count { color:#f5c842; }
+        .card.low      .count { color:#4cda8a; }
+        .card.total    .count { color:var(--accent); }
+
+        .status-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:32px; }
+        .status-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center; }
+        .status-card .count { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; }
+        .status-card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-top:4px; }
+        .status-card.open      .count { color:#f76f6f; }
+        .status-card.progress  .count { color:#f5c842; }
+        .status-card.resolved  .count { color:#4cda8a; }
+        .status-card.accepted  .count { color:var(--muted); }
+
+        /* PANELS */
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:32px; }
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; }
+        .panel h2 { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#fff; letter-spacing:.05em; margin-bottom:16px; text-transform:uppercase; }
+        .field { margin-bottom:12px; }
+        .field label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; }
+        .field input, .field select, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; font-family:'IBM Plex Sans',sans-serif; }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
+        .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .btn { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:8px 18px; font-size:12px; font-family:'IBM Plex Mono',monospace; cursor:pointer; margin-top:6px; }
+        .btn:hover { opacity:.85; }
+
+        /* ASSETS LIST */
+        .asset-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+        .asset-item:last-child { border-bottom:none; }
+        .asset-name { font-size:13px; color:var(--text); }
+        .asset-category { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-top:2px; }
+        .asset-delete { background:transparent; border:1px solid #7a1e1e; color:#ffb3b3; border-radius:4px; padding:3px 8px; font-size:10px; cursor:pointer; text-decoration:none; font-family:'IBM Plex Mono',monospace; }
+        .asset-delete:hover { background:#7a1e1e; }
+        .empty-state { color:var(--muted); font-size:12px; text-align:center; padding:20px; }
+
+        /* TABLE */
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.1em; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        tbody tr { border-bottom:1px solid var(--border); }
+        tbody tr:last-child { border-bottom:none; }
+        tbody tr:hover { background:rgba(79,142,247,.04); }
+        td { padding:10px 14px; vertical-align:top; font-size:12px; }
+        .cve-id { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); white-space:nowrap; }
+        .asset-cell { font-size:12px; }
+        .asset-cell small { display:block; color:var(--muted); font-size:10px; margin-top:2px; }
+        .cvss-cell { font-family:'IBM Plex Mono',monospace; font-weight:600; }
+        .desc-cell { max-width:220px; font-size:12px; color:var(--muted); }
+
+        .risk-badge { display:inline-block; padding:3px 9px; border-radius:3px; font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+        .risk-critical { background:#7a1e1e; color:#ffb3b3; }
+        .risk-high     { background:#7a3e1e; color:#ffc89e; }
+        .risk-medium   { background:#7a5c00; color:#ffe08a; }
+        .risk-low      { background:#1a6e3c; color:#a8f0c6; }
+        .risk-unrated  { background:#2a2a3d; color:#9999bb; }
+
+        .status-form select { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-size:11px; font-family:'IBM Plex Mono',monospace; }
+        .status-form button { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:4px 10px; font-size:11px; font-family:'IBM Plex Mono',monospace; cursor:pointer; margin-left:6px; }
+        .delete-link { color:#ffb3b3; font-size:10px; text-decoration:none; margin-left:8px; font-family:'IBM Plex Mono',monospace; }
+        .delete-link:hover { text-decoration:underline; }
+
+        .footer { margin-top:32px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns:1fr; }
+            .cards { grid-template-columns:repeat(2,1fr); }
+            .status-cards { grid-template-columns:repeat(2,1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>VULNERABILITY TRACKER</h1>
+            <p>Assets &amp; CVE Management &nbsp;/&nbsp; Risk-Rated by CVSS Score</p>
+        </div>
+        <div class="topbar-right">
+            <a href="/" class="btn-link">Compliance Dashboard</a>
+            <a href="/vulnerabilities/pdf" class="btn-accent">Download PDF</a>
+            <a href="/vulnerabilities/csv" class="btn-accent">Download CSV</a>
+            <a href="/logout" class="btn-link">Sign Out</a>
+        </div>
+    </div>
+
+    <!-- RISK SUMMARY CARDS -->
+    <div class="cards">
+        <div class="card total">
+            <div class="count">{{ total_vulns }}</div>
+            <div class="label">Total Vulnerabilities</div>
+        </div>
+        <div class="card critical">
+            <div class="count">{{ risk_summary['Critical'] }}</div>
+            <div class="label">Critical</div>
+        </div>
+        <div class="card high">
+            <div class="count">{{ risk_summary['High'] }}</div>
+            <div class="label">High</div>
+        </div>
+        <div class="card medium">
+            <div class="count">{{ risk_summary['Medium'] }}</div>
+            <div class="label">Medium</div>
+        </div>
+        <div class="card low">
+            <div class="count">{{ risk_summary['Low'] }}</div>
+            <div class="label">Low</div>
+        </div>
+    </div>
+
+    <!-- STATUS SUMMARY CARDS -->
+    <div class="status-cards">
+        <div class="status-card open">
+            <div class="count">{{ status_summary['Open'] }}</div>
+            <div class="label">Open</div>
+        </div>
+        <div class="status-card progress">
+            <div class="count">{{ status_summary['In Progress'] }}</div>
+            <div class="label">In Progress</div>
+        </div>
+        <div class="status-card resolved">
+            <div class="count">{{ status_summary['Resolved'] }}</div>
+            <div class="label">Resolved</div>
+        </div>
+        <div class="status-card accepted">
+            <div class="count">{{ status_summary['Accepted Risk'] }}</div>
+            <div class="label">Accepted Risk</div>
+        </div>
+    </div>
+
+    {% if role == 'admin' %}
+    <!-- ADD ASSET / ADD VULNERABILITY PANELS -->
+    <div class="grid-2">
+        <div class="panel">
+            <h2>Add Asset</h2>
+            <form method="POST" action="/assets/create">
+                <div class="field">
+                    <label>Asset Name</label>
+                    <input type="text" name="name" placeholder="e.g. Customer Portal API" required>
+                </div>
+                <div class="field">
+                    <label>Category</label>
+                    <select name="category" required>
+                        <option value="Web Application / API">Web Application / API</option>
+                        <option value="Server / Infrastructure">Server / Infrastructure</option>
+                        <option value="Database">Database</option>
+                        <option value="Endpoint">Endpoint</option>
+                        <option value="Cloud Service">Cloud Service</option>
+                        <option value="Network Device">Network Device</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <input type="text" name="description" placeholder="Brief description">
+                </div>
+                <div class="field">
+                    <label>Owner</label>
+                    <input type="text" name="owner" placeholder="Team or person responsible">
+                </div>
+                <button class="btn" type="submit">Add Asset</button>
+            </form>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">Current Assets</p>
+                {% for asset in assets %}
+                <div class="asset-item">
+                    <div>
+                        <div class="asset-name">{{ asset['name'] }}</div>
+                        <div class="asset-category">{{ asset['category'] }}</div>
+                    </div>
+                    <a href="/assets/delete/{{ asset['id'] }}" class="asset-delete"
+                       onclick="return confirm('Delete this asset and all its vulnerabilities?')">Delete</a>
+                </div>
+                {% else %}
+                <div class="empty-state">No assets added yet. Add one above.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Log Vulnerability</h2>
+            <form method="POST" action="/vulnerabilities/create">
+                <div class="field">
+                    <label>Asset</label>
+                    <select name="asset_id" required>
+                        <option value="">Select an asset</option>
+                        {% for asset in assets %}
+                        <option value="{{ asset['id'] }}">{{ asset['name'] }} ({{ asset['category'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>CVE ID</label>
+                        <input type="text" name="cve_id" placeholder="CVE-2025-12345">
+                    </div>
+                    <div class="field">
+                        <label>CVSS Score (0-10)</label>
+                        <input type="number" name="cvss_score" step="0.1" min="0" max="10" placeholder="e.g. 8.5">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Description</label>
+                    <textarea name="description" rows="2" placeholder="Brief description of the vulnerability"></textarea>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label>Affected System / Version</label>
+                        <input type="text" name="affected_system" placeholder="e.g. nginx 1.18.0">
+                    </div>
+                    <div class="field">
+                        <label>Identified Date</label>
+                        <input type="date" name="identified_date">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Assigned To</label>
+                    <input type="text" name="assigned_to" placeholder="Username or team">
+                </div>
+                <button class="btn" type="submit">Log Vulnerability</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- VULNERABILITIES TABLE -->
+    <p class="section-title">All Vulnerabilities</p>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Asset</th>
+                    <th>CVE ID</th>
+                    <th>CVSS</th>
+                    <th>Risk</th>
+                    <th>Description</th>
+                    <th>Affected System</th>
+                    <th>Identified</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vulns %}
+                <tr>
+                    <td class="asset-cell">
+                        {{ v['asset_name'] }}
+                        <small>{{ v['asset_category'] }}</small>
+                    </td>
+                    <td class="cve-id">{{ v['cve_id'] or '—' }}</td>
+                    <td class="cvss-cell">{{ v['cvss_score'] if v['cvss_score'] is not none else '—' }}</td>
+                    <td>
+                        {% set r = v['risk_rating'] %}
+                        <span class="risk-badge risk-{{ r | lower }}">{{ r }}</span>
+                    </td>
+                    <td class="desc-cell">{{ v['description'] or '—' }}</td>
+                    <td>{{ v['affected_system'] or '—' }}</td>
+                    <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">{{ v['identified_date'] or '—' }}</td>
+                    <td>{{ v['assigned_to'] or '—' }}</td>
+                    <td>
+                        {% if role == 'admin' %}
+                        <form class="status-form" method="POST" action="/vulnerabilities/update-status/{{ v['id'] }}" style="display:flex;align-items:center;">
+                            <select name="status">
+                                {% for option in ["Open", "In Progress", "Resolved", "Accepted Risk"] %}
+                                    <option value="{{ option }}" {% if option == v['status'] %}selected{% endif %}>{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit">Save</button>
+                        </form>
+                        <a href="/vulnerabilities/delete/{{ v['id'] }}" class="delete-link"
+                           onclick="return confirm('Delete this vulnerability entry?')">Delete</a>
+                        {% else %}
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">{{ v['status'] }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="empty-state">No vulnerabilities logged yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <span>Auditra &nbsp;/&nbsp; Vulnerability Tracker</span>
+        <span>CVSS v3.1 severity scale: Critical 9.0-10 / High 7.0-8.9 / Medium 4.0-6.9 / Low 0.1-3.9</span>
+    </div>
+
+</body>
+</html>
