@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditra - Risk Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+
+        /* TOPBAR */
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px; }
+        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; letter-spacing:.05em; }
+        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
+        .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .btn-link { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
+        .btn-link:hover { border-color:var(--accent); color:var(--text); }
+        .btn-accent { background:var(--accent); color:#fff; border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; border:none; cursor:pointer; }
+        .btn-accent:hover { opacity:.85; }
+
+        /* CARDS */
+        .cards { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:32px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
+        .card .count { font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:600; line-height:1; margin-bottom:6px; }
+        .card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+        .card.critical .count { color:#f76f6f; }
+        .card.high     .count { color:#ff9e5c; }
+        .card.medium   .count { color:#f5c842; }
+        .card.low      .count { color:#4cda8a; }
+        .card.total    .count { color:var(--accent); }
+
+        /* GRID LAYOUT: heatmap + auto-generate panel side by side */
+        .grid-2 { display:grid; grid-template-columns:1.1fr 0.9fr; gap:24px; margin-bottom:32px; align-items:start; }
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; }
+        .panel h2 { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#fff; letter-spacing:.05em; margin-bottom:16px; text-transform:uppercase; }
+
+        /* HEAT MAP */
+        .heatmap-wrapper { overflow-x:auto; }
+        .heatmap { border-collapse:collapse; margin-top:8px; }
+        .heatmap th { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:6px; text-align:center; }
+        .heatmap td { width:52px; height:52px; text-align:center; vertical-align:middle; font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; border:1px solid var(--bg); position:relative; }
+        .axis-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+        .impact-axis { writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; padding-right:6px; }
+
+        /* Heat map cell colors by score band */
+        .cell-low      { background:#1a6e3c; color:#d4f5e0; }
+        .cell-medium   { background:#7a5c00; color:#ffe8a8; }
+        .cell-high     { background:#8a3e1a; color:#ffcaa0; }
+        .cell-critical { background:#7a1e1e; color:#ffc0c0; }
+        .cell-empty    { background:#1a1a2e; color:var(--muted); font-weight:400; }
+
+        /* AUTO GENERATE PANEL */
+        .auto-gen-desc { color:var(--muted); font-size:12px; line-height:1.7; margin-bottom:16px; }
+        .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+        .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+        .legend-dot { width:10px; height:10px; border-radius:2px; display:inline-block; }
+
+        /* ADD RISK FORM */
+        .field { margin-bottom:12px; }
+        .field label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; }
+        .field input, .field select, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; font-family:'IBM Plex Sans',sans-serif; }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
+        .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .btn { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:8px 18px; font-size:12px; font-family:'IBM Plex Mono',monospace; cursor:pointer; margin-top:6px; }
+        .btn:hover { opacity:.85; }
+
+        /* TABLE */
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        table.risk-table { width:100%; border-collapse:collapse; }
+        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.1em; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        tbody tr { border-bottom:1px solid var(--border); }
+        tbody tr:last-child { border-bottom:none; }
+        tbody tr:hover { background:rgba(79,142,247,.04); }
+        td { padding:10px 14px; vertical-align:top; font-size:12px; }
+        .risk-title { font-size:13px; color:var(--text); }
+        .risk-title small { display:block; color:var(--muted); font-size:10px; margin-top:2px; font-family:'IBM Plex Mono',monospace; }
+        .source-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:9px; font-weight:600; font-family:'IBM Plex Mono',monospace; }
+        .source-control { background:#1a2e5a; color:#7ab4ff; }
+        .source-vulnerability { background:#2e1a3a; color:#d4a0ff; }
+        .source-manual { background:#2a2a3d; color:#9999bb; }
+        .score-cell { font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px; }
+        .rating-badge { display:inline-block; padding:3px 9px; border-radius:3px; font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+        .rating-critical { background:#7a1e1e; color:#ffb3b3; }
+        .rating-high     { background:#7a3e1e; color:#ffc89e; }
+        .rating-medium   { background:#7a5c00; color:#ffe08a; }
+        .rating-low      { background:#1a6e3c; color:#a8f0c6; }
+
+        .update-form { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+        .update-form select, .update-form input { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:10px; font-family:'IBM Plex Mono',monospace; width:60px; }
+        .update-form input[name="owner"] { width:90px; }
+        .update-form button { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:10px; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+        .delete-link { color:#ffb3b3; font-size:10px; text-decoration:none; margin-left:6px; font-family:'IBM Plex Mono',monospace; }
+        .delete-link:hover { text-decoration:underline; }
+
+        .empty-state { color:var(--muted); font-size:12px; text-align:center; padding:24px; }
+        .footer { margin-top:32px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns:1fr; }
+            .cards { grid-template-columns:repeat(2,1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>RISK REGISTER</h1>
+            <p>Enterprise Risk Scoring &nbsp;/&nbsp; Likelihood &times; Impact Matrix</p>
+        </div>
+        <div class="topbar-right">
+            <a href="/" class="btn-link">Compliance</a>
+            <a href="/vulnerabilities" class="btn-link">Vulnerabilities</a>
+            <a href="/risks/pdf" class="btn-accent">Download PDF</a>
+            <a href="/risks/csv" class="btn-accent">Download CSV</a>
+            <a href="/logout" class="btn-link">Sign Out</a>
+        </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="cards">
+        <div class="card total">
+            <div class="count">{{ total_risks }}</div>
+            <div class="label">Total Risks</div>
+        </div>
+        <div class="card critical">
+            <div class="count">{{ risk_summary['Critical'] }}</div>
+            <div class="label">Critical</div>
+        </div>
+        <div class="card high">
+            <div class="count">{{ risk_summary['High'] }}</div>
+            <div class="label">High</div>
+        </div>
+        <div class="card medium">
+            <div class="count">{{ risk_summary['Medium'] }}</div>
+            <div class="label">Medium</div>
+        </div>
+        <div class="card low">
+            <div class="count">{{ risk_summary['Low'] }}</div>
+            <div class="label">Low</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- HEAT MAP -->
+        <div class="panel">
+            <h2>Risk Heat Map</h2>
+            <div class="heatmap-wrapper">
+                <table class="heatmap">
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td colspan="5" style="text-align:center;"><span class="axis-label">Impact &rarr;</span></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        {% for i in range(1,6) %}
+                        <th>{{ i }}</th>
+                        {% endfor %}
+                    </tr>
+                    {% for l in range(5,0,-1) %}
+                    <tr>
+                        {% if l == 5 %}
+                        <td rowspan="5" class="impact-axis"><span class="axis-label">Likelihood</span></td>
+                        {% endif %}
+                        <th>{{ l }}</th>
+                        {% for i in range(1,6) %}
+                            {% set score = l * i %}
+                            {% set count = heatmap.get((l, i), 0) %}
+                            {% if score >= 15 %}{% set cellclass = 'cell-critical' %}
+                            {% elif score >= 10 %}{% set cellclass = 'cell-high' %}
+                            {% elif score >= 5 %}{% set cellclass = 'cell-medium' %}
+                            {% else %}{% set cellclass = 'cell-low' %}
+                            {% endif %}
+                            <td class="{{ cellclass if count > 0 else 'cell-empty' }}">{{ count if count > 0 else '' }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><span class="legend-dot" style="background:#1a6e3c;"></span> Low (1-4)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#7a5c00;"></span> Medium (5-9)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#8a3e1a;"></span> High (10-14)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#7a1e1e;"></span> Critical (15-25)</div>
+            </div>
+        </div>
+
+        {% if role == 'admin' %}
+        <!-- AUTO GENERATE + MANUAL ADD -->
+        <div class="panel">
+            <h2>Generate Risks</h2>
+            <p class="auto-gen-desc">
+                Scan all Non-Compliant controls and open Critical/High vulnerabilities,
+                and automatically create risk entries for any not already in the register.
+                Duplicates are skipped.
+            </p>
+            <form method="POST" action="/risks/auto-generate">
+                <button class="btn" type="submit">Auto-Generate Risks</button>
+            </form>
+
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+                <h2 style="margin-bottom:16px;">Add Manual Risk</h2>
+                <form method="POST" action="/risks/create">
+                    <div class="field">
+                        <label>Risk Title</label>
+                        <input type="text" name="title" placeholder="e.g. Third-party vendor data access" required>
+                    </div>
+                    <div class="field">
+                        <label>Description</label>
+                        <textarea name="description" rows="2" placeholder="Brief description of the risk"></textarea>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Likelihood (1-5)</label>
+                            <select name="likelihood" required>
+                                {% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Impact (1-5)</label>
+                            <select name="impact" required>
+                                {% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Owner</label>
+                            <input type="text" name="owner" placeholder="Team or person">
+                        </div>
+                        <div class="field">
+                            <label>Identified Date</label>
+                            <input type="date" name="identified_date">
+                        </div>
+                    </div>
+                    <button class="btn" type="submit">Add Risk</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RISK TABLE -->
+    <p class="section-title">Risk Register</p>
+    <div class="table-wrapper">
+        <table class="risk-table">
+            <thead>
+                <tr>
+                    <th>Risk</th>
+                    <th>Source</th>
+                    <th>Likelihood</th>
+                    <th>Impact</th>
+                    <th>Score</th>
+                    <th>Rating</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in risks %}
+                <tr>
+                    <td class="risk-title">
+                        {{ r['title'] }}
+                        {% if r['description'] %}<small>{{ r['description'][:80] }}{% if r['description']|length > 80 %}...{% endif %}</small>{% endif %}
+                    </td>
+                    <td><span class="source-badge source-{{ r['source_type'] | lower }}">{{ r['source_type'] }}</span></td>
+                    <td>{{ r['likelihood'] }}</td>
+                    <td>{{ r['impact'] }}</td>
+                    <td class="score-cell">{{ r['risk_score'] }}</td>
+                    <td><span class="rating-badge rating-{{ r['risk_rating'] | lower }}">{{ r['risk_rating'] }}</span></td>
+                    <td>{{ r['owner'] or 'Unassigned' }}</td>
+                    <td>
+                        {% if role == 'admin' %}
+                        <form class="update-form" method="POST" action="/risks/update/{{ r['id'] }}">
+                            <select name="likelihood" title="Likelihood">
+                                {% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['likelihood'] %}selected{% endif %}>L{{ n }}</option>{% endfor %}
+                            </select>
+                            <select name="impact" title="Impact">
+                                {% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['impact'] %}selected{% endif %}>I{{ n }}</option>{% endfor %}
+                            </select>
+                            <select name="status" title="Status">
+                                {% for option in ["Open", "Mitigating", "Closed", "Accepted"] %}
+                                    <option value="{{ option }}" {% if option == r['status'] %}selected{% endif %}>{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="owner" value="{{ r['owner'] or '' }}" placeholder="Owner">
+                            <button type="submit">Save</button>
+                        </form>
+                        <a href="/risks/delete/{{ r['id'] }}" class="delete-link"
+                           onclick="return confirm('Delete this risk entry?')">Delete</a>
+                        {% else %}
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">{{ r['status'] }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="empty-state">No risks in the register yet. Use Auto-Generate or add one manually.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <span>Auditra &nbsp;/&nbsp; Risk Register</span>
+        <span>Risk Score = Likelihood &times; Impact &nbsp;(1-25 scale)</span>
+    </div>
+
+</body>
+</html>

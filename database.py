@@ -1,5 +1,5 @@
 # database.py
-# Updated: added assets and vulnerabilities tables for vulnerability tracker.
+# Updated: added risks table for the Risk Scoring Engine (likelihood x impact matrix).
 
 import sqlite3
 import datetime
@@ -71,7 +71,6 @@ def init_db():
         )
     """)
 
-    # Assets table: tracks organizational assets that vulnerabilities are logged against
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS assets (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +82,6 @@ def init_db():
         )
     """)
 
-    # Vulnerabilities table: CVEs logged against assets with risk ratings
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vulnerabilities (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,6 +97,28 @@ def init_db():
             assigned_to     TEXT,
             created_at      TEXT,
             FOREIGN KEY (asset_id) REFERENCES assets (id)
+        )
+    """)
+
+    # Risks table: the Enterprise Risk Register.
+    # source_type tells us where the risk came from: 'Control', 'Vulnerability', or 'Manual'
+    # source_ref stores the control_id or vulnerability id it was generated from (NULL for manual)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS risks (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            title           TEXT NOT NULL,
+            description     TEXT,
+            source_type     TEXT DEFAULT 'Manual',
+            source_ref      TEXT,
+            likelihood      INTEGER NOT NULL,
+            impact          INTEGER NOT NULL,
+            risk_score      INTEGER,
+            risk_rating     TEXT,
+            status          TEXT DEFAULT 'Open',
+            owner           TEXT,
+            identified_date TEXT,
+            reviewed_date   TEXT,
+            created_at      TEXT
         )
     """)
 
@@ -165,6 +185,15 @@ def get_all_controls():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def get_control_by_id(control_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM controls WHERE control_id = ?", (control_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
 
 
 def update_status(control_id, new_status, changed_by):
@@ -267,7 +296,6 @@ def get_session_stats():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_all_assets():
-    """Fetch all assets, ordered by most recently created."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM assets ORDER BY created_at DESC")
@@ -286,7 +314,6 @@ def get_asset_by_id(asset_id):
 
 
 def create_asset(name, category, description, owner):
-    """Add a new asset. Returns the new asset's ID."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -303,7 +330,6 @@ def create_asset(name, category, description, owner):
 
 
 def delete_asset(asset_id):
-    """Delete an asset and all its associated vulnerabilities."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM vulnerabilities WHERE asset_id = ?", (asset_id,))
@@ -317,10 +343,6 @@ def delete_asset(asset_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def calculate_risk_rating(cvss_score):
-    """
-    Convert a CVSS score (0.0 - 10.0) into a risk rating category.
-    Standard CVSS v3.1 severity ranges.
-    """
     if cvss_score is None:
         return "Unrated"
     if cvss_score >= 9.0:
@@ -336,10 +358,6 @@ def calculate_risk_rating(cvss_score):
 
 
 def get_all_vulnerabilities():
-    """
-    Fetch all vulnerabilities joined with their asset details.
-    Ordered by CVSS score descending so highest risk shows first.
-    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -372,7 +390,6 @@ def get_vulnerability_by_id(vuln_id):
 
 def create_vulnerability(asset_id, cve_id, cvss_score, description, affected_system,
                           identified_date, assigned_to):
-    """Add a new vulnerability. Risk rating is auto-calculated from CVSS score."""
     risk_rating = calculate_risk_rating(cvss_score)
     conn = get_connection()
     cursor = conn.cursor()
@@ -392,10 +409,6 @@ def create_vulnerability(asset_id, cve_id, cvss_score, description, affected_sys
 
 
 def update_vulnerability_status(vuln_id, new_status):
-    """
-    Update a vulnerability's remediation status.
-    If marked Resolved, automatically sets resolved_date to today.
-    """
     valid_statuses = ["Open", "In Progress", "Resolved", "Accepted Risk"]
     if new_status not in valid_statuses:
         return False
@@ -421,7 +434,6 @@ def delete_vulnerability(vuln_id):
 
 
 def get_vulnerability_summary():
-    """Count vulnerabilities by risk rating for the summary cards."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT risk_rating, COUNT(*) as count FROM vulnerabilities GROUP BY risk_rating")
@@ -434,7 +446,6 @@ def get_vulnerability_summary():
 
 
 def get_vulnerability_status_summary():
-    """Count vulnerabilities by remediation status."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT status, COUNT(*) as count FROM vulnerabilities GROUP BY status")
@@ -444,6 +455,226 @@ def get_vulnerability_status_summary():
     for row in rows:
         summary[row["status"]] = row["count"]
     return summary
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RISK SCORING ENGINE FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def calculate_risk_score_rating(likelihood, impact):
+    """
+    Standard likelihood x impact risk matrix calculation.
+    Both likelihood and impact are rated 1-5.
+    Score = likelihood x impact, range 1-25.
+
+    Rating bands (standard GRC risk matrix):
+    1-4   = Low
+    5-9   = Medium
+    10-14 = High
+    15-25 = Critical
+    """
+    score = likelihood * impact
+    if score >= 15:
+        rating = "Critical"
+    elif score >= 10:
+        rating = "High"
+    elif score >= 5:
+        rating = "Medium"
+    else:
+        rating = "Low"
+    return score, rating
+
+
+def get_all_risks():
+    """Fetch all risks, highest score first."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM risks ORDER BY risk_score DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def get_risk_by_id(risk_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM risks WHERE id = ?", (risk_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def create_risk(title, description, source_type, source_ref, likelihood, impact,
+                 owner, identified_date):
+    """Add a new risk to the register. Score and rating are auto-calculated."""
+    score, rating = calculate_risk_score_rating(likelihood, impact)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO risks (
+            title, description, source_type, source_ref,
+            likelihood, impact, risk_score, risk_rating,
+            status, owner, identified_date, reviewed_date, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        title, description, source_type, source_ref,
+        likelihood, impact, score, rating,
+        "Open", owner, identified_date, None,
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return new_id
+
+
+def update_risk(risk_id, likelihood, impact, status, owner):
+    """Update an existing risk's scoring, status, or owner."""
+    score, rating = calculate_risk_score_rating(likelihood, impact)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE risks SET
+            likelihood = ?, impact = ?, risk_score = ?, risk_rating = ?,
+            status = ?, owner = ?, reviewed_date = ?
+        WHERE id = ?
+    """, (
+        likelihood, impact, score, rating, status, owner,
+        datetime.date.today().strftime("%Y-%m-%d"), risk_id
+    ))
+    conn.commit()
+    conn.close()
+
+
+def delete_risk(risk_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM risks WHERE id = ?", (risk_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_existing_risk_refs():
+    """Return the set of source_ref values already in the risk register, to avoid duplicate auto-generation."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT source_ref FROM risks WHERE source_ref IS NOT NULL")
+    rows = cursor.fetchall()
+    conn.close()
+    return {row["source_ref"] for row in rows}
+
+
+def auto_generate_risks_from_controls():
+    """
+    Scan all Non-Compliant controls and auto-generate risk entries for any
+    that don't already have a linked risk. Likelihood/impact are pre-set
+    based on the framework the control belongs to, admin can adjust after.
+    Returns the number of new risks created.
+    """
+    existing_refs = get_existing_risk_refs()
+    controls = get_all_controls()
+    created = 0
+    for c in controls:
+        if c["status"] != "Non-Compliant":
+            continue
+        ref = f"CONTROL:{c['control_id']}"
+        if ref in existing_refs:
+            continue
+        # Default scoring: non-compliant controls get moderate-high likelihood,
+        # impact scaled by whether it touches regulatory frameworks (NDPA/GDPR/PCI)
+        likelihood = 4  # non-compliance is an active, ongoing gap - likely to be found
+        impact = 4
+        if c["ndpa"] not in (None, "N/A", "") or c["gdpr"] not in (None, "N/A", ""):
+            impact = 5  # regulatory exposure carries higher impact
+        create_risk(
+            title=f"Non-compliance: {c['control_id']}",
+            description=c["nist_description"],
+            source_type="Control",
+            source_ref=ref,
+            likelihood=likelihood,
+            impact=impact,
+            owner="Unassigned",
+            identified_date=datetime.date.today().strftime("%Y-%m-%d")
+        )
+        created += 1
+    return created
+
+
+def auto_generate_risks_from_vulnerabilities():
+    """
+    Scan all Critical and High risk vulnerabilities that are still Open or
+    In Progress, and auto-generate risk entries for any not already linked.
+    Likelihood/impact derived from CVSS score.
+    Returns the number of new risks created.
+    """
+    existing_refs = get_existing_risk_refs()
+    vulns = get_all_vulnerabilities()
+    created = 0
+    for v in vulns:
+        if v["risk_rating"] not in ("Critical", "High"):
+            continue
+        if v["status"] not in ("Open", "In Progress"):
+            continue
+        ref = f"VULN:{v['id']}"
+        if ref in existing_refs:
+            continue
+        # CVSS 9-10 -> likelihood 5, CVSS 7-8.9 -> likelihood 4
+        likelihood = 5 if v["risk_rating"] == "Critical" else 4
+        impact = 5 if v["risk_rating"] == "Critical" else 4
+        create_risk(
+            title=f"Vulnerability: {v['cve_id'] or 'Unidentified CVE'} on {v['asset_name']}",
+            description=v["description"] or "No description provided.",
+            source_type="Vulnerability",
+            source_ref=ref,
+            likelihood=likelihood,
+            impact=impact,
+            owner=v["assigned_to"] or "Unassigned",
+            identified_date=v["identified_date"] or datetime.date.today().strftime("%Y-%m-%d")
+        )
+        created += 1
+    return created
+
+
+def get_risk_summary():
+    """Count risks by rating for summary cards."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT risk_rating, COUNT(*) as count FROM risks GROUP BY risk_rating")
+    rows = cursor.fetchall()
+    conn.close()
+    summary = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+    for row in rows:
+        summary[row["risk_rating"]] = row["count"]
+    return summary
+
+
+def get_risk_status_summary():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT status, COUNT(*) as count FROM risks GROUP BY status")
+    rows = cursor.fetchall()
+    conn.close()
+    summary = {"Open": 0, "Mitigating": 0, "Closed": 0, "Accepted": 0}
+    for row in rows:
+        summary[row["status"]] = row["count"]
+    return summary
+
+
+def get_heatmap_matrix():
+    """
+    Build a 5x5 grid counting how many risks fall into each
+    likelihood/impact combination. Used to render the heat map.
+    Returns a dict keyed by (likelihood, impact) tuple -> count.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT likelihood, impact, COUNT(*) as count FROM risks GROUP BY likelihood, impact")
+    rows = cursor.fetchall()
+    conn.close()
+    matrix = {}
+    for row in rows:
+        matrix[(row["likelihood"], row["impact"])] = row["count"]
+    return matrix
 
 
 # ─────────────────────────────────────────────────────────────────────────────

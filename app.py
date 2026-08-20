@@ -1,5 +1,5 @@
 # app.py
-# Updated: added vulnerability tracker routes.
+# Updated: added Risk Scoring Engine routes (likelihood x impact matrix).
 
 import datetime
 import csv
@@ -15,7 +15,11 @@ from database import (
     get_all_assets, get_asset_by_id, create_asset, delete_asset,
     get_all_vulnerabilities, get_vulnerability_by_id, create_vulnerability,
     update_vulnerability_status, delete_vulnerability,
-    get_vulnerability_summary, get_vulnerability_status_summary
+    get_vulnerability_summary, get_vulnerability_status_summary,
+    get_all_risks, get_risk_by_id, create_risk, update_risk, delete_risk,
+    auto_generate_risks_from_controls, auto_generate_risks_from_vulnerabilities,
+    get_risk_summary, get_risk_status_summary, get_heatmap_matrix,
+    calculate_risk_score_rating
 )
 
 app = Flask(__name__)
@@ -351,6 +355,142 @@ def export_vuln_csv():
     response = make_response(output.getvalue())
     response.headers["Content-Type"]        = "text/csv"
     response.headers["Content-Disposition"] = f"attachment; filename=auditra_vuln_report_{date}.csv"
+    return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RISK SCORING ENGINE
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/risks")
+def risk_register():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "PAGE_VIEW", "Viewed risk register", get_ip())
+    risks           = get_all_risks()
+    risk_summary    = get_risk_summary()
+    status_summary  = get_risk_status_summary()
+    heatmap         = get_heatmap_matrix()
+    total_risks     = len(risks)
+    return render_template(
+        "risk_register.html",
+        risks=risks, risk_summary=risk_summary, status_summary=status_summary,
+        heatmap=heatmap, total_risks=total_risks,
+        username=session["username"], role=session["role"]
+    )
+
+
+@app.route("/risks/auto-generate", methods=["POST"])
+def auto_generate_risks():
+    """
+    Scan Non-Compliant controls and Critical/High open vulnerabilities,
+    auto-create risk entries for any not already in the register.
+    """
+    if not logged_in() or not is_admin():
+        return redirect(url_for("risk_register"))
+    from_controls = auto_generate_risks_from_controls()
+    from_vulns    = auto_generate_risks_from_vulnerabilities()
+    total_created = from_controls + from_vulns
+    log_activity(
+        session["username"], "RISK_AUTO_GENERATED",
+        f"Auto-generated {total_created} risks ({from_controls} from controls, {from_vulns} from vulnerabilities)",
+        get_ip()
+    )
+    return redirect(url_for("risk_register"))
+
+
+@app.route("/risks/create", methods=["POST"])
+def create_risk_route():
+    if not logged_in() or not is_admin():
+        return redirect(url_for("risk_register"))
+    title           = request.form.get("title", "").strip()
+    description     = request.form.get("description", "").strip()
+    likelihood_raw  = request.form.get("likelihood", "").strip()
+    impact_raw      = request.form.get("impact", "").strip()
+    owner           = request.form.get("owner", "").strip()
+    identified_date = request.form.get("identified_date", "").strip()
+
+    if title and likelihood_raw and impact_raw:
+        likelihood = int(likelihood_raw)
+        impact     = int(impact_raw)
+        create_risk(
+            title=title, description=description, source_type="Manual", source_ref=None,
+            likelihood=likelihood, impact=impact, owner=owner,
+            identified_date=identified_date or datetime.date.today().strftime("%Y-%m-%d")
+        )
+        log_activity(session["username"], "RISK_CREATED", f"Created manual risk: {title}", get_ip())
+    return redirect(url_for("risk_register"))
+
+
+@app.route("/risks/update/<int:risk_id>", methods=["POST"])
+def update_risk_route(risk_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("risk_register"))
+    likelihood = int(request.form.get("likelihood", 1))
+    impact     = int(request.form.get("impact", 1))
+    status     = request.form.get("status", "Open").strip()
+    owner      = request.form.get("owner", "").strip()
+    update_risk(risk_id, likelihood, impact, status, owner)
+    log_activity(session["username"], "RISK_UPDATED", f"Updated risk #{risk_id}: L{likelihood} x I{impact}, status {status}", get_ip())
+    return redirect(url_for("risk_register"))
+
+
+@app.route("/risks/delete/<int:risk_id>")
+def delete_risk_route(risk_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("risk_register"))
+    delete_risk(risk_id)
+    log_activity(session["username"], "RISK_DELETED", f"Deleted risk #{risk_id}", get_ip())
+    return redirect(url_for("risk_register"))
+
+
+@app.route("/risks/pdf")
+def export_risk_pdf():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "EXPORT", "Downloaded PDF risk register report", get_ip())
+    risks          = get_all_risks()
+    risk_summary   = get_risk_summary()
+    status_summary = get_risk_status_summary()
+    heatmap        = get_heatmap_matrix()
+    total_risks    = len(risks)
+    date           = datetime.date.today().strftime("%Y-%m-%d")
+    html_string = render_template(
+        "risk_report.html",
+        risks=risks, risk_summary=risk_summary, status_summary=status_summary,
+        heatmap=heatmap, total_risks=total_risks, date=date, username=session["username"]
+    )
+    pdf_buffer = io.BytesIO()
+    pisa.CreatePDF(html_string, dest=pdf_buffer)
+    response = make_response(pdf_buffer.getvalue())
+    response.headers["Content-Type"]        = "application/pdf"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_risk_register_{date}.pdf"
+    return response
+
+
+@app.route("/risks/csv")
+def export_risk_csv():
+    if not logged_in():
+        return redirect(url_for("login"))
+    log_activity(session["username"], "EXPORT", "Downloaded CSV risk register report", get_ip())
+    risks  = get_all_risks()
+    date   = datetime.date.today().strftime("%Y-%m-%d")
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Title", "Description", "Source Type", "Source Ref",
+        "Likelihood", "Impact", "Risk Score", "Risk Rating",
+        "Status", "Owner", "Identified Date", "Reviewed Date"
+    ])
+    for r in risks:
+        writer.writerow([
+            r["title"], r["description"], r["source_type"], r["source_ref"],
+            r["likelihood"], r["impact"], r["risk_score"], r["risk_rating"],
+            r["status"], r["owner"], r["identified_date"], r["reviewed_date"]
+        ])
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"]        = "text/csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_risk_register_{date}.csv"
     return response
 
 

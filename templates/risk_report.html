@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Risk Register Report</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 18mm 14mm 18mm 14mm;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a2e; background: #ffffff; }
+
+        /* HEADER */
+        .header-table { width: 100%; border-collapse: collapse; border-bottom: 3px solid #4f8ef7; margin-bottom: 20px; }
+        .header-table td { vertical-align: bottom; padding-bottom: 14px; }
+        .header-right { text-align: right; }
+        .header-table h1 { font-size: 22px; font-weight: bold; color: #0d0d1a; letter-spacing: 1px; margin-bottom: 4px; }
+        .header-table .sub { font-size: 10px; color: #666; }
+        .header-table .meta { font-size: 10px; color: #888; line-height: 1.8; }
+        .header-table .meta strong { color: #444; }
+
+        /* SUMMARY CARDS */
+        .cards-table { width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 20px; }
+        .cards-table td { border: 1px solid #d0d8f0; border-radius: 5px; padding: 12px 8px; text-align: center; background: #f9faff; width: 20%; }
+        .cards-table .count { font-size: 26px; font-weight: bold; line-height: 1; margin-bottom: 4px; display: block; }
+        .cards-table .label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #888; display: block; }
+        .cards-table .total    .count { color: #4f8ef7; }
+        .cards-table .critical .count { color: #c0302a; }
+        .cards-table .high     .count { color: #d9701e; }
+        .cards-table .medium   .count { color: #a07000; }
+        .cards-table .low      .count { color: #1a7a4a; }
+
+        /* HEAT MAP */
+        .heatmap-table { border-collapse: collapse; margin: 0 auto 24px auto; }
+        .heatmap-table th { font-size: 8px; color: #888; text-transform: uppercase; padding: 4px; text-align: center; }
+        .heatmap-table td { width: 34px; height: 34px; text-align: center; vertical-align: middle; font-size: 11px; font-weight: bold; border: 1px solid #fff; }
+        .cell-low      { background: #d4f0e0; color: #1a7a4a; }
+        .cell-medium   { background: #fff0c0; color: #a07000; }
+        .cell-high     { background: #ffdcc0; color: #b85c00; }
+        .cell-critical { background: #fdd; color: #c0302a; }
+        .cell-empty    { background: #f4f4f8; color: #bbb; font-weight: normal; }
+        .axis-label { font-size: 8px; color: #888; text-transform: uppercase; }
+
+        /* SECTION TITLE */
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #4f8ef7; font-weight: bold; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #e0e8ff; }
+
+        /* RISK TABLE */
+        table.risk-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        thead th { background: #1a2a5a; color: #c8d8ff; font-size: 9px; text-transform: uppercase; padding: 8px; text-align: left; border: 1px solid #243070; }
+        tbody tr { page-break-inside: avoid; }
+        tbody tr:nth-child(even) { background: #f4f7ff; }
+        tbody tr:nth-child(odd)  { background: #ffffff; }
+        td { padding: 7px 8px; vertical-align: top; font-size: 9px; border: 1px solid #dde4f5; line-height: 1.5; word-wrap: break-word; }
+
+        .col-title  { width: 26%; }
+        .col-source { width: 10%; }
+        .col-num    { width: 7%; }
+        .col-rating { width: 9%; }
+        .col-owner  { width: 12%; }
+        .col-status { width: 10%; }
+
+        .source-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 8px; font-weight: bold; }
+        .source-control      { background: #dde8ff; color: #2255bb; }
+        .source-vulnerability{ background: #ecdeff; color: #6622aa; }
+        .source-manual       { background: #eee; color: #777; }
+
+        .rating-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 8px; font-weight: bold; white-space: nowrap; }
+        .rating-critical { background: #fdd; color: #c0302a; }
+        .rating-high     { background: #ffdcc0; color: #b85c00; }
+        .rating-medium   { background: #fff0c0; color: #a07000; }
+        .rating-low      { background: #d4f0e0; color: #1a7a4a; }
+
+        /* FOOTER */
+        .report-footer { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .report-footer td { padding-top: 10px; border-top: 1px solid #c8d4f0; font-size: 9px; color: #aaa; }
+        .footer-right { text-align: right; }
+
+        thead { display: table-header-group; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <table class="header-table">
+        <tr>
+            <td style="width:65%;">
+                <h1>AUDITRA</h1>
+                <div class="sub">Risk Register Report</div>
+            </td>
+            <td class="header-right" style="width:35%;">
+                <div class="meta">
+                    <strong>Generated:</strong> {{ date }}<br>
+                    <strong>Prepared by:</strong> {{ username }}<br>
+                    <strong>Classification:</strong> Confidential
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- SUMMARY CARDS -->
+    <table class="cards-table">
+        <tr>
+            <td class="total">
+                <span class="count">{{ total_risks }}</span>
+                <span class="label">Total Risks</span>
+            </td>
+            <td class="critical">
+                <span class="count">{{ risk_summary['Critical'] }}</span>
+                <span class="label">Critical</span>
+            </td>
+            <td class="high">
+                <span class="count">{{ risk_summary['High'] }}</span>
+                <span class="label">High</span>
+            </td>
+            <td class="medium">
+                <span class="count">{{ risk_summary['Medium'] }}</span>
+                <span class="label">Medium</span>
+            </td>
+            <td class="low">
+                <span class="count">{{ risk_summary['Low'] }}</span>
+                <span class="label">Low</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- HEAT MAP -->
+    <div class="section-title">Risk Heat Map (Likelihood &times; Impact)</div>
+    <table class="heatmap-table">
+        <tr>
+            <td></td>
+            <td colspan="5" style="text-align:center;"><span class="axis-label">Impact</span></td>
+        </tr>
+        <tr>
+            <td></td>
+            {% for i in range(1,6) %}<th>{{ i }}</th>{% endfor %}
+        </tr>
+        {% for l in range(5,0,-1) %}
+        <tr>
+            <th>{{ l }}</th>
+            {% for i in range(1,6) %}
+                {% set score = l * i %}
+                {% set count = heatmap.get((l, i), 0) %}
+                {% if score >= 15 %}{% set cellclass = 'cell-critical' %}
+                {% elif score >= 10 %}{% set cellclass = 'cell-high' %}
+                {% elif score >= 5 %}{% set cellclass = 'cell-medium' %}
+                {% else %}{% set cellclass = 'cell-low' %}
+                {% endif %}
+                <td class="{{ cellclass if count > 0 else 'cell-empty' }}">{{ count if count > 0 else '' }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- RISK REGISTER TABLE -->
+    <div class="section-title">Risk Register</div>
+    <table class="risk-table">
+        <thead>
+            <tr>
+                <th class="col-title">Risk</th>
+                <th class="col-source">Source</th>
+                <th class="col-num">Likelihood</th>
+                <th class="col-num">Impact</th>
+                <th class="col-num">Score</th>
+                <th class="col-rating">Rating</th>
+                <th class="col-owner">Owner</th>
+                <th class="col-status">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in risks %}
+            <tr>
+                <td>{{ r['title'] }}</td>
+                <td><span class="source-badge source-{{ r['source_type'] | lower }}">{{ r['source_type'] }}</span></td>
+                <td>{{ r['likelihood'] }}</td>
+                <td>{{ r['impact'] }}</td>
+                <td><strong>{{ r['risk_score'] }}</strong></td>
+                <td>
+                    {% set rt = r['risk_rating'] %}
+                    {% if rt == 'Critical' %}<span class="rating-badge rating-critical">Critical</span>
+                    {% elif rt == 'High' %}<span class="rating-badge rating-high">High</span>
+                    {% elif rt == 'Medium' %}<span class="rating-badge rating-medium">Medium</span>
+                    {% else %}<span class="rating-badge rating-low">Low</span>
+                    {% endif %}
+                </td>
+                <td>{{ r['owner'] or 'Unassigned' }}</td>
+                <td>{{ r['status'] }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align:center;color:#aaa;padding:16px;">No risks recorded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- FOOTER -->
+    <table class="report-footer">
+        <tr>
+            <td style="width:70%;">Auditra &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Not for external distribution without authorization</td>
+            <td class="footer-right" style="width:30%;">Report Date: {{ date }}</td>
+        </tr>
+    </table>
+
+</body>
+</html>
