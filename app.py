@@ -6,6 +6,11 @@ import csv
 import io
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from xhtml2pdf import pisa
+from notifications import (
+    notify_admins_new_registration, notify_user_account_activated,
+    notify_user_password_reset, notify_admins_control_noncompliant,
+    notify_admins_critical_vulnerability, notify_admins_critical_risk
+)
 from database import (
     init_db, get_connection, get_all_controls, update_status, get_summary, get_audit_log,
     verify_password, register_user, create_user_by_admin, get_all_users,
@@ -19,7 +24,7 @@ from database import (
     get_all_risks, get_risk_by_id, create_risk, update_risk, delete_risk,
     auto_generate_risks_from_controls, auto_generate_risks_from_vulnerabilities,
     get_risk_summary, get_risk_status_summary, get_heatmap_matrix,
-    calculate_risk_score_rating
+    calculate_risk_score_rating, get_admin_emails, get_control_by_id
 )
 
 app = Flask(__name__)
@@ -86,16 +91,19 @@ def register():
     success = None
     if request.method == "POST":
         username         = request.form.get("username", "").strip()
+        email            = request.form.get("email", "").strip()
         password         = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
-        if not username or not password:
-            error = "Username and password are required."
+        if not username or not email or not password:
+            error = "Username, email, and password are required."
         elif password != confirm_password:
             error = "Passwords do not match."
         else:
-            ok, message = register_user(username, password)
+            ok, message = register_user(username, email, password)
             if ok:
                 log_activity(username, "REGISTER", "Self-registration submitted, pending approval", get_ip())
+                admin_emails = get_admin_emails()
+                notify_admins_new_registration(admin_emails, username)
                 success = "Account created. Please wait for admin approval before logging in."
             else:
                 error = message
@@ -134,6 +142,11 @@ def update():
     new_status  = request.form.get("status")
     update_status(control_id, new_status, session["username"])
     log_activity(session["username"], "STATUS_UPDATE", f"Updated {control_id} to {new_status}", get_ip())
+    if new_status == "Non-Compliant":
+        control = get_control_by_id(control_id)
+        if control:
+            admin_emails = get_admin_emails()
+            notify_admins_control_noncompliant(admin_emails, control_id, control["nist_description"])
     return redirect(url_for("dashboard"))
 
 
@@ -287,6 +300,11 @@ def create_vulnerability_route():
             session["username"], "VULN_CREATED",
             f"Logged vulnerability: {cve_id or 'No CVE ID'} on asset ID {asset_id}", get_ip()
         )
+        if cvss_score is not None and cvss_score >= 9.0:
+            asset = get_asset_by_id(int(asset_id))
+            asset_name = asset["name"] if asset else "Unknown asset"
+            admin_emails = get_admin_emails()
+            notify_admins_critical_vulnerability(admin_emails, cve_id, asset_name, cvss_score)
     return redirect(url_for("vulnerabilities"))
 
 
@@ -419,6 +437,10 @@ def create_risk_route():
             identified_date=identified_date or datetime.date.today().strftime("%Y-%m-%d")
         )
         log_activity(session["username"], "RISK_CREATED", f"Created manual risk: {title}", get_ip())
+        score, rating = calculate_risk_score_rating(likelihood, impact)
+        if rating == "Critical":
+            admin_emails = get_admin_emails()
+            notify_admins_critical_risk(admin_emails, title, score)
     return redirect(url_for("risk_register"))
 
 
@@ -542,9 +564,10 @@ def create_user():
     if not logged_in() or not is_admin():
         return redirect(url_for("dashboard"))
     username = request.form.get("username", "").strip()
+    email    = request.form.get("email", "").strip()
     password = request.form.get("password", "").strip()
     role     = request.form.get("role", "viewer").strip()
-    ok, message = create_user_by_admin(username, password, role)
+    ok, message = create_user_by_admin(username, email, password, role)
     if ok:
         log_activity(session["username"], "USER_CREATED", f"Created user: {username} ({role})", get_ip())
     all_users = get_all_users()
@@ -561,6 +584,7 @@ def activate(user_id):
     user = get_user_by_id(user_id)
     if user:
         log_activity(session["username"], "USER_ACTIVATED", f"Activated user: {user['username']}", get_ip())
+        notify_user_account_activated(user["email"], user["username"])
     activate_user(user_id)
     return redirect(url_for("users"))
 
@@ -599,6 +623,7 @@ def reset_user_password(user_id):
     user = get_user_by_id(user_id)
     if ok and user:
         log_activity(session["username"], "PASSWORD_RESET", f"Reset password for: {user['username']}", get_ip())
+        notify_user_password_reset(user["email"], user["username"])
     all_users = get_all_users()
     return render_template(
         "users.html", users=all_users, username=session["username"], role=session["role"],

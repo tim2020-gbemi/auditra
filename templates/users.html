@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Auditra - User Management</title>
+    <title>GRC Toolkit - User Management</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; --error:#f76f6f; --success:#4cda8a; }
@@ -87,6 +87,10 @@
                     <input type="text" name="username" required placeholder="Enter username">
                 </div>
                 <div class="field">
+                    <label>Email</label>
+                    <input type="email" name="email" required placeholder="user@example.com">
+                </div>
+                <div class="field">
                     <label>Password</label>
                     <input type="password" name="password" required placeholder="Min. 8 characters">
                 </div>
@@ -121,6 +125,7 @@
             <thead>
                 <tr>
                     <th>Username</th>
+                    <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
                     <th>Created</th>
@@ -131,6 +136,7 @@
                 {% for user in users %}
                 <tr>
                     <td class="username-cell">{{ user['username'] }}</td>
+                    <td style="color:var(--muted);font-size:12px;">{{ user['email'] or 'Not set' }}</td>
                     <td>
                         <span class="role-badge role-{{ user['role'] }}">
                             {{ user['role'] | upper }}

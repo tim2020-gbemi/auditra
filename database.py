@@ -42,12 +42,19 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             username      TEXT UNIQUE NOT NULL,
+            email         TEXT,
             password_hash TEXT NOT NULL,
             role          TEXT DEFAULT 'viewer',
             is_active     INTEGER DEFAULT 0,
             created_at    TEXT
         )
     """)
+
+    # Migration: add email column if the table already existed without it
+    cursor.execute("PRAGMA table_info(users)")
+    existing_columns = [row["name"] for row in cursor.fetchall()]
+    if "email" not in existing_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
@@ -158,17 +165,20 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         print("Creating default admin user...")
+        import os
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
         cursor.execute("""
-            INSERT INTO users (username, password_hash, role, is_active, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (username, email, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             "admin",
+            admin_email,
             generate_password_hash("admin123"),
             "admin",
             1,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
-        print("Default admin created. Username: admin / Password: admin123")
+        print(f"Default admin created. Username: admin / Password: admin123 / Email: {admin_email}")
 
     conn.commit()
     conn.close()
@@ -708,6 +718,20 @@ def get_all_users():
     return users
 
 
+def get_admin_emails():
+    """
+    Fetch email addresses of all active admin users.
+    Used to send alert notifications (Critical vuln, Non-Compliant control, etc).
+    Skips any admin with no email set.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM users WHERE role = 'admin' AND is_active = 1 AND email IS NOT NULL AND email != ''")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row["email"] for row in rows]
+
+
 def verify_password(username, password):
     user = get_user_by_username(username)
     if not user:
@@ -719,19 +743,21 @@ def verify_password(username, password):
     return user, "ok"
 
 
-def register_user(username, password):
+def register_user(username, email, password):
     if get_user_by_username(username):
         return False, "Username already exists."
     if len(password) < 8:
         return False, "Password must be at least 8 characters."
+    if not email or "@" not in email:
+        return False, "A valid email address is required."
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT INTO users (username, password_hash, role, is_active, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (username, email, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            username, generate_password_hash(password), "viewer", 0,
+            username, email, generate_password_hash(password), "viewer", 0,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()
@@ -742,7 +768,7 @@ def register_user(username, password):
         conn.close()
 
 
-def create_user_by_admin(username, password, role):
+def create_user_by_admin(username, email, password, role):
     if get_user_by_username(username):
         return False, "Username already exists."
     if len(password) < 8:
@@ -751,10 +777,10 @@ def create_user_by_admin(username, password, role):
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT INTO users (username, password_hash, role, is_active, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (username, email, password_hash, role, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            username, generate_password_hash(password), role, 1,
+            username, email, generate_password_hash(password), role, 1,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
         conn.commit()
