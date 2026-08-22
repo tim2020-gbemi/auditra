@@ -34,9 +34,16 @@ def init_db():
             ndpa_description TEXT,
             gdpr             TEXT,
             gdpr_description TEXT,
-            status           TEXT DEFAULT 'Not Assessed'
+            status           TEXT DEFAULT 'Not Assessed',
+            tier             TEXT DEFAULT 'core'
         )
     """)
+
+    # Migration: add tier column if the table already existed without it
+    cursor.execute("PRAGMA table_info(controls)")
+    existing_control_columns = [row["name"] for row in cursor.fetchall()]
+    if "tier" not in existing_control_columns:
+        cursor.execute("ALTER TABLE controls ADD COLUMN tier TEXT DEFAULT 'core'")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -142,8 +149,8 @@ def init_db():
                     pci_dss, pci_description,
                     ndpa, ndpa_description,
                     gdpr, gdpr_description,
-                    status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, tier
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 control_id,
                 details["nist_function"],
@@ -158,7 +165,8 @@ def init_db():
                 details["ndpa_description"],
                 ", ".join(details.get("gdpr", ["N/A"])),
                 details.get("gdpr_description", "Not directly applicable"),
-                details["status"]
+                details["status"],
+                details.get("tier", "core")
             ))
         print(f"Loaded {len(CONTROLS_DB)} controls.")
 
@@ -188,13 +196,81 @@ def init_db():
 # CONTROL FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_all_controls():
+def get_all_controls(tier=None):
+    """
+    Fetch controls, optionally filtered by tier.
+    tier=None or 'full' -> everything
+    tier='core' -> only the curated baseline set (currently the original 39)
+    """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM controls ORDER BY nist_function, control_id")
+    if tier == "core":
+        cursor.execute("SELECT * FROM controls WHERE tier = 'core' ORDER BY nist_function, control_id")
+    else:
+        cursor.execute("SELECT * FROM controls ORDER BY nist_function, control_id")
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def get_priority_items():
+    """
+    Cross-table Priority view: pulls together everything that needs
+    attention right now, regardless of which module it lives in.
+    - Non-Compliant controls
+    - Open/In Progress vulnerabilities rated Critical or High
+    - Open/Mitigating risks rated Critical or High
+    Returns a single list of dicts, each tagged with its source type,
+    so the dashboard can render one unified "needs attention" table.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    items = []
+
+    cursor.execute("SELECT * FROM controls WHERE status = 'Non-Compliant' ORDER BY control_id")
+    for row in cursor.fetchall():
+        items.append({
+            "source_type": "Control",
+            "title": row["control_id"],
+            "description": row["nist_description"],
+            "severity": "Non-Compliant",
+            "link": "/",
+        })
+
+    cursor.execute("""
+        SELECT vulnerabilities.*, assets.name AS asset_name
+        FROM vulnerabilities
+        JOIN assets ON vulnerabilities.asset_id = assets.id
+        WHERE vulnerabilities.risk_rating IN ('Critical', 'High')
+        AND vulnerabilities.status IN ('Open', 'In Progress')
+        ORDER BY vulnerabilities.cvss_score DESC
+    """)
+    for row in cursor.fetchall():
+        items.append({
+            "source_type": "Vulnerability",
+            "title": row["cve_id"] or f"Unidentified CVE on {row['asset_name']}",
+            "description": row["description"] or "No description provided.",
+            "severity": row["risk_rating"],
+            "link": "/vulnerabilities",
+        })
+
+    cursor.execute("""
+        SELECT * FROM risks
+        WHERE risk_rating IN ('Critical', 'High')
+        AND status IN ('Open', 'Mitigating')
+        ORDER BY risk_score DESC
+    """)
+    for row in cursor.fetchall():
+        items.append({
+            "source_type": "Risk",
+            "title": row["title"],
+            "description": row["description"] or "No description provided.",
+            "severity": row["risk_rating"],
+            "link": "/risks",
+        })
+
+    conn.close()
+    return items
 
 
 def get_control_by_id(control_id):

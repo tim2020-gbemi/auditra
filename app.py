@@ -24,7 +24,7 @@ from database import (
     get_all_risks, get_risk_by_id, create_risk, update_risk, delete_risk,
     auto_generate_risks_from_controls, auto_generate_risks_from_vulnerabilities,
     get_risk_summary, get_risk_status_summary, get_heatmap_matrix,
-    calculate_risk_score_rating, get_admin_emails, get_control_by_id
+    calculate_risk_score_rating, get_admin_emails, get_control_by_id, get_priority_items
 )
 
 app = Flask(__name__)
@@ -119,15 +119,32 @@ def dashboard():
     if not logged_in():
         return redirect(url_for("login"))
     log_activity(session["username"], "PAGE_VIEW", "Viewed compliance dashboard", get_ip())
-    controls  = get_all_controls()
+
+    # view can be 'core', 'full', or 'priority' - defaults to core
+    view = request.args.get("view", "core")
+
+    priority_items = []
+    if view == "priority":
+        controls = []
+        priority_items = get_priority_items()
+    elif view == "full":
+        controls = get_all_controls(tier="full")
+    else:
+        view = "core"
+        controls = get_all_controls(tier="core")
+
+    # Summary and score always reflect the FULL control set, not the current view,
+    # so the compliance score stays consistent regardless of which tab is open
+    all_controls = get_all_controls(tier="full")
     summary   = get_summary()
     audit_log = get_audit_log()
-    total     = len(controls)
+    total     = len(all_controls)
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
+
     return render_template(
         "dashboard.html",
         controls=controls, summary=summary, audit_log=audit_log,
-        score=score, total=total,
+        score=score, total=total, view=view, priority_items=priority_items,
         username=session["username"], role=session["role"]
     )
 
