@@ -1290,6 +1290,104 @@ CONTROLS_DB = {
         "gdpr": ["Art. 32"], "gdpr_description": "Availability guarantee through capacity planning",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # NIST CSF 2.0 - DETECT FUNCTION - FULL EXPANSION (tier: full)
+    # 9 additional subcategories (DE.CM-01, DE.AE-02 already core)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # ─── DE.CM: Continuous Monitoring (4 remaining) ───────────────────────────
+    "DE.CM-02": {
+        "nist_function": "DETECT",
+        "nist_description": "The physical environment is monitored to find potentially adverse events.",
+        "iso_27001": ["7.4"], "iso_description": "Physical security monitoring",
+        "soc2_tsc": ["CC6.4"], "soc2_description": "Physical Access Controls - Monitoring",
+        "pci_dss": ["9.5"], "pci_description": "Physical access monitoring",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Physical monitoring as security measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.CM-03": {
+        "nist_function": "DETECT",
+        "nist_description": "Personnel activity and technology usage are monitored to find potentially adverse events.",
+        "iso_27001": ["8.16"], "iso_description": "Monitoring activities",
+        "soc2_tsc": ["CC7.2"], "soc2_description": "System Operations - Personnel Activity Monitoring",
+        "pci_dss": ["10.2.1"], "pci_description": "User activity logging and monitoring",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Monitoring as accountability measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.CM-06": {
+        "nist_function": "DETECT",
+        "nist_description": "External service provider activities and services are monitored to find potentially adverse events.",
+        "iso_27001": ["5.22"], "iso_description": "Monitoring, review and change management of supplier services",
+        "soc2_tsc": ["CC9.2"], "soc2_description": "Risk Mitigation - Vendor Activity Monitoring",
+        "pci_dss": ["12.8.4"], "pci_description": "Service provider compliance monitoring",
+        "ndpa": ["NDPA S.42"], "ndpa_description": "Monitoring of third-party processor activity",
+        "gdpr": ["Art. 28"], "gdpr_description": "Ongoing processor compliance monitoring",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.CM-09": {
+        "nist_function": "DETECT",
+        "nist_description": "Computing hardware and software, runtime environments, and their data are monitored to find potentially adverse events.",
+        "iso_27001": ["8.16", "8.15"], "iso_description": "Monitoring activities and logging",
+        "soc2_tsc": ["CC7.2"], "soc2_description": "System Operations - Infrastructure Monitoring",
+        "pci_dss": ["10.2"], "pci_description": "Audit logging of system components",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Continuous monitoring of processing systems",
+        "status": "Not Assessed", "tier": "full",
+    },
+
+    # ─── DE.AE: Adverse Event Analysis (5 remaining) ──────────────────────────
+    "DE.AE-03": {
+        "nist_function": "DETECT",
+        "nist_description": "Information is correlated from multiple sources.",
+        "iso_27001": ["8.16"], "iso_description": "Correlation of monitoring information",
+        "soc2_tsc": ["CC7.2"], "soc2_description": "System Operations - Event Correlation",
+        "pci_dss": ["10.4"], "pci_description": "Log correlation and review",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["N/A"], "gdpr_description": "Not directly applicable",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.AE-04": {
+        "nist_function": "DETECT",
+        "nist_description": "The estimated impact and scope of adverse events are understood.",
+        "iso_27001": ["5.25"], "iso_description": "Assessment and decision on information security events",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Impact Assessment",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident impact assessment procedures",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach impact assessment for notification threshold",
+        "gdpr": ["Art. 33"], "gdpr_description": "Assessment of breach risk to data subjects",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.AE-06": {
+        "nist_function": "DETECT",
+        "nist_description": "Information on adverse events is provided to authorized staff and tools.",
+        "iso_27001": ["5.25", "5.26"], "iso_description": "Event assessment and incident response communication",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Event Communication",
+        "pci_dss": ["12.10.2"], "pci_description": "Incident notification to relevant personnel",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Internal breach notification procedures",
+        "gdpr": ["Art. 33"], "gdpr_description": "Internal escalation of breach information",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.AE-07": {
+        "nist_function": "DETECT",
+        "nist_description": "Cyber threat intelligence and other contextual information are integrated into the analysis.",
+        "iso_27001": ["5.7"], "iso_description": "Threat intelligence integration",
+        "soc2_tsc": ["CC3.2"], "soc2_description": "Risk Assessment - Threat Intelligence Integration",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["N/A"], "gdpr_description": "Not directly applicable",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "DE.AE-08": {
+        "nist_function": "DETECT",
+        "nist_description": "Incidents are declared when adverse events meet the defined incident criteria.",
+        "iso_27001": ["5.24", "5.25"], "iso_description": "Incident management planning and event assessment",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Incident Declaration",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident declaration criteria",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach declaration criteria for 72-hour notification",
+        "gdpr": ["Art. 33"], "gdpr_description": "Breach awareness triggering 72-hour notification clock",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
