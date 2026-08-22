@@ -1388,6 +1388,128 @@ CONTROLS_DB = {
         "gdpr": ["Art. 33"], "gdpr_description": "Breach awareness triggering 72-hour notification clock",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # NIST CSF 2.0 - RESPOND FUNCTION - FULL EXPANSION (tier: full)
+    # 11 additional subcategories (RS.MA-01, RS.CO-02 already core)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # ─── RS.MA: Incident Management (4 remaining) ─────────────────────────────
+    "RS.MA-02": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incident reports are triaged and validated.",
+        "iso_27001": ["5.25"], "iso_description": "Assessment and decision on information security events",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Incident Triage",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident report triage procedures",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach report validation prior to notification",
+        "gdpr": ["Art. 33"], "gdpr_description": "Assessment of reported breach validity",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.MA-03": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incidents are categorized and prioritized.",
+        "iso_27001": ["5.25"], "iso_description": "Categorization of information security events",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Incident Categorization",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident severity classification",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach severity classification for notification timeline",
+        "gdpr": ["Art. 33"], "gdpr_description": "Breach categorization by risk level",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.MA-04": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incidents are escalated or elevated as needed.",
+        "iso_27001": ["5.26"], "iso_description": "Response to information security incidents",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Escalation",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident escalation procedures",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Escalation to NDPC for reportable breaches",
+        "gdpr": ["Art. 33"], "gdpr_description": "Escalation to supervisory authority",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.MA-05": {
+        "nist_function": "RESPOND",
+        "nist_description": "The criteria for initiating incident recovery are applied.",
+        "iso_27001": ["5.29"], "iso_description": "Information security during disruption",
+        "soc2_tsc": ["CC7.5"], "soc2_description": "Incident Response - Recovery Initiation",
+        "pci_dss": ["12.10.4"], "pci_description": "Recovery initiation criteria",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["N/A"], "gdpr_description": "Not directly applicable",
+        "status": "Not Assessed", "tier": "full",
+    },
+
+    # ─── RS.AN: Incident Analysis (4) ──────────────────────────────────────────
+    "RS.AN-03": {
+        "nist_function": "RESPOND",
+        "nist_description": "Analysis is performed to establish what has taken place during an incident and the root cause of the incident.",
+        "iso_27001": ["5.27"], "iso_description": "Learning from information security incidents",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Root Cause Analysis",
+        "pci_dss": ["12.10.1"], "pci_description": "Root cause analysis of incidents",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Root cause analysis for breach report",
+        "gdpr": ["Art. 33"], "gdpr_description": "Nature of breach analysis for notification",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.AN-06": {
+        "nist_function": "RESPOND",
+        "nist_description": "Actions performed during an investigation are recorded, and the records' integrity and provenance are preserved.",
+        "iso_27001": ["5.28"], "iso_description": "Collection of evidence",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Evidence Preservation",
+        "pci_dss": ["12.10.1"], "pci_description": "Forensic evidence preservation procedures",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 5"], "gdpr_description": "Accountability - investigation records",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.AN-07": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incident data and metadata are collected, and their integrity and provenance are preserved.",
+        "iso_27001": ["5.28"], "iso_description": "Collection of evidence and data preservation",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Data Preservation",
+        "pci_dss": ["10.5"], "pci_description": "Audit log integrity preservation",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 5"], "gdpr_description": "Integrity of breach investigation data",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.AN-08": {
+        "nist_function": "RESPOND",
+        "nist_description": "An incident's magnitude is estimated and validated.",
+        "iso_27001": ["5.25"], "iso_description": "Assessment and decision on information security events",
+        "soc2_tsc": ["CC7.3"], "soc2_description": "System Operations - Magnitude Estimation",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident magnitude assessment",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach magnitude estimation for notification content",
+        "gdpr": ["Art. 33"], "gdpr_description": "Approximate number of data subjects and records affected",
+        "status": "Not Assessed", "tier": "full",
+    },
+
+    # ─── RS.CO: Incident Response Reporting and Communication (1 remaining) ──
+    "RS.CO-03": {
+        "nist_function": "RESPOND",
+        "nist_description": "Information is shared with designated internal and external stakeholders.",
+        "iso_27001": ["5.5", "5.26"], "iso_description": "Contact with authorities and incident communication",
+        "soc2_tsc": ["CC2.2"], "soc2_description": "Communication and Information - Stakeholder Sharing",
+        "pci_dss": ["12.10.1"], "pci_description": "Communication plan for incidents",
+        "ndpa": ["NDPA S.40"], "ndpa_description": "Communication to affected data subjects",
+        "gdpr": ["Art. 34"], "gdpr_description": "Communication of breach to data subjects",
+        "status": "Not Assessed", "tier": "full",
+    },
+
+    # ─── RS.MI: Incident Mitigation (2) ─────────────────────────────────────────
+    "RS.MI-01": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incidents are contained.",
+        "iso_27001": ["5.26"], "iso_description": "Response to information security incidents",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Containment",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident containment procedures",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Containment measures to limit breach impact",
+        "gdpr": ["Art. 32"], "gdpr_description": "Ability to restore availability - containment",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RS.MI-02": {
+        "nist_function": "RESPOND",
+        "nist_description": "Incidents are eradicated.",
+        "iso_27001": ["5.26"], "iso_description": "Response to information security incidents - eradication",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Eradication",
+        "pci_dss": ["12.10.1"], "pci_description": "Incident eradication procedures",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Eradication measures following breach containment",
+        "gdpr": ["Art. 32"], "gdpr_description": "Remediation of vulnerability that caused breach",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
