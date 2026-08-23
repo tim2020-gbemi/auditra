@@ -1588,6 +1588,71 @@ CONTROLS_DB = {
         "gdpr": ["Art. 34"], "gdpr_description": "Public communication for high-risk breaches affecting many data subjects",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # NDPA 2023 + GAID 2025 - DEEP EXPANSION (tier: full)
+    # 6 additional controls covering previously unmapped sections
+    # ═══════════════════════════════════════════════════════════════════════
+
+    "NDPA.S29": {
+        "nist_function": "GOVERN",
+        "nist_description": "The organization fulfills its general obligations as a data controller or processor, including accountability for compliance, cooperation with the Nigeria Data Protection Commission, and maintaining evidence of compliance measures.",
+        "iso_27001": ["5.1", "9.2"], "iso_description": "Leadership responsibility and internal audit for compliance evidence",
+        "soc2_tsc": ["CC1.2"], "soc2_description": "Control Environment - Accountability",
+        "pci_dss": ["12.1"], "pci_description": "Documented security policy and accountability",
+        "ndpa": ["NDPA S.29"], "ndpa_description": "General obligations of data controller and data processor",
+        "gdpr": ["Art. 24"], "gdpr_description": "Controller responsibility and accountability principle",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "NDPA.S30": {
+        "nist_function": "PROTECT",
+        "nist_description": "Sensitive personal data (health, biometric, genetic, financial, and similar special category data) is processed only under specific lawful grounds with heightened safeguards.",
+        "iso_27001": ["5.34", "8.24"], "iso_description": "Privacy protection and cryptography for sensitive categories",
+        "soc2_tsc": ["P4.1"], "soc2_description": "Privacy - Sensitive Data Handling",
+        "pci_dss": ["3.4"], "pci_description": "Protection of sensitive stored data",
+        "ndpa": ["NDPA S.30"], "ndpa_description": "Special safeguards for sensitive personal data processing",
+        "gdpr": ["Art. 9"], "gdpr_description": "Processing of special categories of personal data",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "NDPA.S31": {
+        "nist_function": "GOVERN",
+        "nist_description": "Additional safeguards are applied when processing personal data of children or persons lacking legal capacity to consent, including parental or guardian consent mechanisms.",
+        "iso_27001": ["5.34"], "iso_description": "Privacy protection for vulnerable data subjects",
+        "soc2_tsc": ["P3.1"], "soc2_description": "Privacy - Consent for Vulnerable Populations",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["NDPA S.31"], "ndpa_description": "Processing of children's data and persons lacking legal capacity",
+        "gdpr": ["Art. 8"], "gdpr_description": "Conditions applicable to child's consent",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "NDPA.S34": {
+        "nist_function": "GOVERN",
+        "nist_description": "Data subject rights under Part VI of the NDPA (access, correction, objection, restriction, erasure, and portability) are recognized, documented, and operationalized as a complete rights framework, not handled ad hoc.",
+        "iso_27001": ["5.34"], "iso_description": "Comprehensive data subject rights framework",
+        "soc2_tsc": ["P5.1", "P5.2"], "soc2_description": "Privacy - Complete Data Subject Rights",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["NDPA S.34"], "ndpa_description": "Rights of a data subject - Part VI framework",
+        "gdpr": ["Art. 12", "Art. 15-22"], "gdpr_description": "Data subject rights framework (Chapter III)",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "NDPA.S44": {
+        "nist_function": "GOVERN",
+        "nist_description": "The organization has assessed whether it meets the 'data controller or processor of major importance' threshold under Section 44, triggering heightened registration, DPO, and audit obligations.",
+        "iso_27001": ["4.1"], "iso_description": "Understanding organizational context and applicable obligations",
+        "soc2_tsc": ["CC1.1"], "soc2_description": "Control Environment - Regulatory Classification",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["NDPA S.44"], "ndpa_description": "Definition and classification of data controller/processor of major importance",
+        "gdpr": ["N/A"], "gdpr_description": "Not directly applicable (GDPR has no equivalent threshold classification)",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GAID.ART6": {
+        "nist_function": "GOVERN",
+        "nist_description": "The organization has assessed whether any of its processing activities fall under the household or personal purpose exemption, and understands that this exemption does not excuse violations of a data subject's fundamental right to privacy.",
+        "iso_27001": ["4.3"], "iso_description": "Determining the scope of the information security management system",
+        "soc2_tsc": ["CC1.1"], "soc2_description": "Control Environment - Scope Determination",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["GAID Art. 6", "NDPA S.3"], "ndpa_description": "Household/personal purpose exemption scope and limits",
+        "gdpr": ["Art. 2"], "gdpr_description": "Material scope - household activity exemption",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
