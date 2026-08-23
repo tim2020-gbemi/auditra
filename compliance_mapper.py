@@ -1653,6 +1653,71 @@ CONTROLS_DB = {
         "gdpr": ["Art. 2"], "gdpr_description": "Material scope - household activity exemption",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # GDPR - DEEP EXPANSION (tier: full)
+    # 6 additional controls covering previously unmapped articles
+    # ═══════════════════════════════════════════════════════════════════════
+
+    "GDPR.A9": {
+        "nist_function": "PROTECT",
+        "nist_description": "Processing of special categories of personal data (health, biometric, genetic, racial, religious, political, sexual orientation) is prohibited by default and only permitted under specific listed exceptions.",
+        "iso_27001": ["5.34", "8.24"], "iso_description": "Privacy protection and cryptography for special categories",
+        "soc2_tsc": ["P4.1"], "soc2_description": "Privacy - Special Category Data",
+        "pci_dss": ["3.4"], "pci_description": "Protection of sensitive stored data",
+        "ndpa": ["NDPA S.30"], "ndpa_description": "Special safeguards for sensitive personal data",
+        "gdpr": ["Art. 9"], "gdpr_description": "Processing of special categories of personal data - prohibited unless exception applies",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GDPR.A16": {
+        "nist_function": "GOVERN",
+        "nist_description": "Processes exist to correct inaccurate personal data without undue delay and to complete incomplete personal data, including by means of a supplementary statement.",
+        "iso_27001": ["5.34"], "iso_description": "Data accuracy and correction processes",
+        "soc2_tsc": ["P5.2"], "soc2_description": "Privacy - Data Subject Rights (Rectification)",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["NDPA S.34"], "ndpa_description": "Right to rectification under data subject rights framework",
+        "gdpr": ["Art. 16"], "gdpr_description": "Right to rectification of inaccurate personal data",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GDPR.A21": {
+        "nist_function": "GOVERN",
+        "nist_description": "Data subjects can object to processing based on legitimate interests or public task grounds, and processing must stop unless compelling legitimate grounds override the objection. Objection to direct marketing must always be honored.",
+        "iso_27001": ["5.34"], "iso_description": "Handling data subject objections",
+        "soc2_tsc": ["P5.2"], "soc2_description": "Privacy - Data Subject Rights (Objection)",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["NDPA S.34"], "ndpa_description": "Right to object under data subject rights framework",
+        "gdpr": ["Art. 21"], "gdpr_description": "Right to object, absolute for direct marketing",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GDPR.A22": {
+        "nist_function": "GOVERN",
+        "nist_description": "Data subjects are not subject to decisions based solely on automated processing, including profiling, which produce legal or similarly significant effects, unless specific conditions and safeguards apply.",
+        "iso_27001": ["5.34"], "iso_description": "Governance of automated decision-making systems",
+        "soc2_tsc": ["P3.1"], "soc2_description": "Privacy - Automated Decision Governance",
+        "pci_dss": ["N/A"], "pci_description": "Not directly applicable",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable (NDPA has no direct equivalent provision)",
+        "gdpr": ["Art. 22"], "gdpr_description": "Automated individual decision-making, including profiling",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GDPR.A28": {
+        "nist_function": "GOVERN",
+        "nist_description": "Processing by a processor is governed by a contract or legal act binding the processor to the controller, setting out subject matter, duration, nature, purpose of processing, and the processor's obligations.",
+        "iso_27001": ["5.20"], "iso_description": "Addressing information security within supplier agreements",
+        "soc2_tsc": ["CC9.2"], "soc2_description": "Risk Mitigation - Processor Contractual Obligations",
+        "pci_dss": ["12.8.2"], "pci_description": "Written agreements with service providers",
+        "ndpa": ["NDPA S.42"], "ndpa_description": "Data protection clauses in processor contracts",
+        "gdpr": ["Art. 28"], "gdpr_description": "Processor obligations under a binding data processing agreement",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "GDPR.A34": {
+        "nist_function": "RESPOND",
+        "nist_description": "When a personal data breach is likely to result in a high risk to the rights and freedoms of natural persons, the controller communicates the breach to the affected data subjects without undue delay, in clear and plain language.",
+        "iso_27001": ["5.26"], "iso_description": "Response to information security incidents - data subject communication",
+        "soc2_tsc": ["CC7.4"], "soc2_description": "Incident Response - Data Subject Notification",
+        "pci_dss": ["12.10.1"], "pci_description": "Breach communication procedures",
+        "ndpa": ["NDPA S.40"], "ndpa_description": "Notification to data subjects following a breach",
+        "gdpr": ["Art. 34"], "gdpr_description": "Communication of a personal data breach to the data subject",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
