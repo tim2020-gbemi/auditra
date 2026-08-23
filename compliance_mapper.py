@@ -1510,6 +1510,84 @@ CONTROLS_DB = {
         "gdpr": ["Art. 32"], "gdpr_description": "Remediation of vulnerability that caused breach",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # NIST CSF 2.0 - RECOVER FUNCTION - FULL EXPANSION (tier: full)
+    # 7 additional subcategories (RC.RP-01 already core) - FINAL NIST BATCH
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # ─── RC.RP: Incident Recovery Plan Execution (5 remaining) ────────────────
+    "RC.RP-02": {
+        "nist_function": "RECOVER",
+        "nist_description": "Recovery actions are selected, scoped, prioritized, and performed.",
+        "iso_27001": ["5.29", "5.30"], "iso_description": "Information security during disruption and ICT readiness",
+        "soc2_tsc": ["A1.2"], "soc2_description": "Availability - Recovery Action Planning",
+        "pci_dss": ["12.10.4"], "pci_description": "Business continuity recovery procedures",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Ability to restore availability and access in a timely manner",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RC.RP-03": {
+        "nist_function": "RECOVER",
+        "nist_description": "The integrity of backups and other restoration assets is verified before using them for restoration.",
+        "iso_27001": ["8.13"], "iso_description": "Information backup integrity verification",
+        "soc2_tsc": ["A1.2"], "soc2_description": "Availability - Backup Integrity Verification",
+        "pci_dss": ["12.10.4"], "pci_description": "Backup integrity testing before restoration",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Regular testing of restoration effectiveness",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RC.RP-04": {
+        "nist_function": "RECOVER",
+        "nist_description": "Critical mission functions and cybersecurity risk management are considered to establish post-incident operational norms.",
+        "iso_27001": ["5.29"], "iso_description": "Information security during disruption",
+        "soc2_tsc": ["A1.1"], "soc2_description": "Availability - Post-Incident Operations",
+        "pci_dss": ["12.10.4"], "pci_description": "Business continuity operational norms",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["N/A"], "gdpr_description": "Not directly applicable",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RC.RP-05": {
+        "nist_function": "RECOVER",
+        "nist_description": "The integrity of restored assets is verified, systems and services are restored, and normal operating status is confirmed.",
+        "iso_27001": ["5.30"], "iso_description": "ICT readiness for business continuity",
+        "soc2_tsc": ["A1.2"], "soc2_description": "Availability - Restoration Verification",
+        "pci_dss": ["12.10.4"], "pci_description": "Verification of restored systems",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Verification of restored data integrity",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RC.RP-06": {
+        "nist_function": "RECOVER",
+        "nist_description": "The end of incident recovery is declared based on criteria, and incident-related documentation is completed.",
+        "iso_27001": ["5.27"], "iso_description": "Learning from information security incidents",
+        "soc2_tsc": ["CC7.5"], "soc2_description": "Incident Response - Closure Documentation",
+        "pci_dss": ["12.10.6"], "pci_description": "Post-incident documentation and lessons learned",
+        "ndpa": ["NDPA S.39"], "ndpa_description": "Breach documentation for NDPC records",
+        "gdpr": ["Art. 33"], "gdpr_description": "Documentation of breach and remedial action taken",
+        "status": "Not Assessed", "tier": "full",
+    },
+
+    # ─── RC.CO: Incident Recovery Communication (2) ────────────────────────────
+    "RC.CO-03": {
+        "nist_function": "RECOVER",
+        "nist_description": "Recovery activities and progress in restoring operational capabilities are communicated to designated internal and external stakeholders.",
+        "iso_27001": ["5.26"], "iso_description": "Response to information security incidents - stakeholder updates",
+        "soc2_tsc": ["CC2.2"], "soc2_description": "Communication and Information - Recovery Updates",
+        "pci_dss": ["12.10.1"], "pci_description": "Recovery status communication plan",
+        "ndpa": ["NDPA S.40"], "ndpa_description": "Recovery status communication to affected parties",
+        "gdpr": ["Art. 34"], "gdpr_description": "Communication of remediation progress to data subjects",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "RC.CO-04": {
+        "nist_function": "RECOVER",
+        "nist_description": "Public updates on incident recovery are shared using approved methods and messaging.",
+        "iso_27001": ["5.26"], "iso_description": "Approved incident communication methods",
+        "soc2_tsc": ["CC2.2"], "soc2_description": "Communication and Information - Public Messaging",
+        "pci_dss": ["12.10.1"], "pci_description": "Approved public communication procedures",
+        "ndpa": ["NDPA S.40"], "ndpa_description": "Public breach disclosure where required",
+        "gdpr": ["Art. 34"], "gdpr_description": "Public communication for high-risk breaches affecting many data subjects",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
