@@ -1718,6 +1718,72 @@ CONTROLS_DB = {
         "gdpr": ["Art. 34"], "gdpr_description": "Communication of a personal data breach to the data subject",
         "status": "Not Assessed", "tier": "full",
     },
+# ═══════════════════════════════════════════════════════════════════════
+    # PCI-DSS v4.0.1 - DEEP EXPANSION (tier: full)
+    # 6 additional controls covering the remaining requirement areas
+    # Completes representation across all 12 PCI-DSS requirements
+    # ═══════════════════════════════════════════════════════════════════════
+
+    "PCI.1.1": {
+        "nist_function": "PROTECT",
+        "nist_description": "Network security controls (NSCs) are defined, implemented, and maintained, including firewalls and routers that restrict connections between untrusted networks and system components in the cardholder data environment.",
+        "iso_27001": ["8.20", "8.22"], "iso_description": "Network security and network segregation",
+        "soc2_tsc": ["CC6.6"], "soc2_description": "Logical Access - Network Protection",
+        "pci_dss": ["1.1", "1.2", "1.3"], "pci_description": "Network security controls and CDE segmentation",
+        "ndpa": ["NDPA S.37"], "ndpa_description": "Network security as a technical safeguard",
+        "gdpr": ["Art. 32"], "gdpr_description": "Network security as a technical measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "PCI.4.1": {
+        "nist_function": "PROTECT",
+        "nist_description": "Strong cryptography and security protocols are used to safeguard cardholder data during transmission over open, public networks.",
+        "iso_27001": ["8.24"], "iso_description": "Use of cryptography for data in transit",
+        "soc2_tsc": ["CC6.7"], "soc2_description": "Transmission Integrity and Confidentiality",
+        "pci_dss": ["4.1", "4.2.1"], "pci_description": "Strong cryptography for cardholder data transmission",
+        "ndpa": ["NDPA S.37"], "ndpa_description": "Security measures for personal data in transmission",
+        "gdpr": ["Art. 32"], "gdpr_description": "Encryption as a technical security measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "PCI.7.1": {
+        "nist_function": "PROTECT",
+        "nist_description": "Access to system components and cardholder data is restricted to only those individuals whose job requires such access, based on the principle of least privilege.",
+        "iso_27001": ["5.15", "5.18"], "iso_description": "Access control policy and rights management",
+        "soc2_tsc": ["CC6.1", "CC6.3"], "soc2_description": "Logical Access - Least Privilege",
+        "pci_dss": ["7.1", "7.2"], "pci_description": "Access control based on business need to know",
+        "ndpa": ["NDPA S.37"], "ndpa_description": "Access management safeguards",
+        "gdpr": ["Art. 32"], "gdpr_description": "Access control as a technical measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "PCI.8.1": {
+        "nist_function": "PROTECT",
+        "nist_description": "Each user and administrator is assigned a unique identity, and access to system components is authenticated using strong authentication mechanisms including multi-factor authentication where required.",
+        "iso_27001": ["5.16", "5.17", "8.5"], "iso_description": "Identity management, authentication information, secure authentication",
+        "soc2_tsc": ["CC6.1", "CC6.2"], "soc2_description": "Logical Access - Identification and Authentication",
+        "pci_dss": ["8.2", "8.3", "8.4"], "pci_description": "User identification, authentication, and multi-factor authentication",
+        "ndpa": ["NDPA S.37"], "ndpa_description": "Authentication safeguards for data access",
+        "gdpr": ["Art. 32"], "gdpr_description": "Authentication as a security measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "PCI.10.1": {
+        "nist_function": "DETECT",
+        "nist_description": "Audit logs are enabled and active for all system components, capturing all individual user access to cardholder data and administrative actions, and reviewed regularly to identify anomalies or suspicious activity.",
+        "iso_27001": ["8.15", "8.16"], "iso_description": "Logging and monitoring activities",
+        "soc2_tsc": ["CC7.2", "CC7.3"], "soc2_description": "System Operations - Logging and Monitoring",
+        "pci_dss": ["10.2", "10.4", "10.7"], "pci_description": "Audit log generation, review, and log management",
+        "ndpa": ["N/A"], "ndpa_description": "Not directly applicable",
+        "gdpr": ["Art. 32"], "gdpr_description": "Logging as an accountability and monitoring measure",
+        "status": "Not Assessed", "tier": "full",
+    },
+    "PCI.12.1": {
+        "nist_function": "GOVERN",
+        "nist_description": "An overall information security policy is established, published, maintained, and disseminated to all relevant personnel, and a formal security awareness program supports the policy.",
+        "iso_27001": ["5.1", "6.3"], "iso_description": "Information security policy and awareness program",
+        "soc2_tsc": ["CC1.2", "CC1.4"], "soc2_description": "Control Environment - Policy and Awareness Program",
+        "pci_dss": ["12.1", "12.6"], "pci_description": "Information security policy and security awareness program",
+        "ndpa": ["NDPA S.24"], "ndpa_description": "Data protection policy establishment",
+        "gdpr": ["Art. 24"], "gdpr_description": "Appropriate policies for data protection",
+        "status": "Not Assessed", "tier": "full",
+    },
 }
 
 
