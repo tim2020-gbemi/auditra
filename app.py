@@ -47,6 +47,21 @@ def get_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr)
 
 
+def summarize_controls(controls):
+    """
+    Count Compliant/Partial/Non-Compliant/Not Assessed within a given
+    list of control rows. Used for exports so the score reflects only
+    the controls actually included in that report (Core vs Full),
+    rather than the global summary across all 150 controls.
+    """
+    summary = {"Compliant": 0, "Partial": 0, "Non-Compliant": 0, "Not Assessed": 0}
+    for row in controls:
+        status = row["status"]
+        if status in summary:
+            summary[status] += 1
+    return summary
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # AUTH ROUTES
 # ─────────────────────────────────────────────────────────────────────────────
@@ -175,21 +190,24 @@ def update():
 def export_pdf():
     if not logged_in():
         return redirect(url_for("login"))
-    log_activity(session["username"], "EXPORT", "Downloaded PDF compliance report", get_ip())
-    controls  = get_all_controls()
-    summary   = get_summary()
+    view = request.args.get("view", "full")
+    if view not in ("core", "full"):
+        view = "full"
+    log_activity(session["username"], "EXPORT", f"Downloaded PDF compliance report ({view})", get_ip())
+    controls  = get_all_controls(tier=view if view == "core" else None)
+    summary   = summarize_controls(controls)
     total     = len(controls)
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
     date      = datetime.date.today().strftime("%Y-%m-%d")
     html_string = render_template(
         "report.html", controls=controls, summary=summary,
-        score=score, total=total, date=date, username=session["username"]
+        score=score, total=total, date=date, username=session["username"], view=view
     )
     pdf_buffer = io.BytesIO()
     pisa.CreatePDF(html_string, dest=pdf_buffer)
     response = make_response(pdf_buffer.getvalue())
     response.headers["Content-Type"]        = "application/pdf"
-    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.pdf"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{view}_{date}.pdf"
     return response
 
 
@@ -197,8 +215,11 @@ def export_pdf():
 def export_csv():
     if not logged_in():
         return redirect(url_for("login"))
-    log_activity(session["username"], "EXPORT", "Downloaded CSV compliance report", get_ip())
-    controls = get_all_controls()
+    view = request.args.get("view", "full")
+    if view not in ("core", "full"):
+        view = "full"
+    log_activity(session["username"], "EXPORT", f"Downloaded CSV compliance report ({view})", get_ip())
+    controls = get_all_controls(tier=view if view == "core" else None)
     date     = datetime.date.today().strftime("%Y-%m-%d")
     output   = io.StringIO()
     writer   = csv.writer(output)
@@ -216,7 +237,7 @@ def export_csv():
         ])
     response = make_response(output.getvalue())
     response.headers["Content-Type"]        = "text/csv"
-    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{view}_{date}.csv"
     return response
 
 
@@ -224,19 +245,22 @@ def export_csv():
 def export_html():
     if not logged_in():
         return redirect(url_for("login"))
-    log_activity(session["username"], "EXPORT", "Downloaded HTML compliance report", get_ip())
-    controls  = get_all_controls()
-    summary   = get_summary()
+    view = request.args.get("view", "full")
+    if view not in ("core", "full"):
+        view = "full"
+    log_activity(session["username"], "EXPORT", f"Downloaded HTML compliance report ({view})", get_ip())
+    controls  = get_all_controls(tier=view if view == "core" else None)
+    summary   = summarize_controls(controls)
     total     = len(controls)
     score     = round((summary["Compliant"] / total) * 100) if total > 0 else 0
     date      = datetime.date.today().strftime("%Y-%m-%d")
     html_string = render_template(
         "report_html.html", controls=controls, summary=summary,
-        score=score, total=total, date=date, username=session["username"]
+        score=score, total=total, date=date, username=session["username"], view=view
     )
     response = make_response(html_string)
     response.headers["Content-Type"]        = "text/html"
-    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{date}.html"
+    response.headers["Content-Disposition"] = f"attachment; filename=auditra_report_{view}_{date}.html"
     return response
 
 

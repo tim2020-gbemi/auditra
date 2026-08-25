@@ -259,6 +259,7 @@
                 <div class="meta">
                     <strong>Generated:</strong> {{ date }}<br>
                     <strong>Prepared by:</strong> {{ username }}<br>
+                    <strong>Report Scope:</strong> {{ 'Core Controls' if view == 'core' else 'Full Framework' }}<br>
                     <strong>Classification:</strong> Confidential
                 </div>
             </td>
@@ -273,7 +274,7 @@
                 <div class="score-label">Compliance Score</div>
             </td>
             <td class="score-right-cell">
-                Assessment covers <strong>{{ total }} controls</strong> across six frameworks.
+                Assessment covers <strong>{{ total }} controls</strong> ({{ 'Core baseline' if view == 'core' else 'Full framework depth' }}) across six frameworks.
                 Score is calculated as the percentage of controls with a <strong>Compliant</strong> status.
                 Controls marked Partial or Non-Compliant require remediation action.
                 Not Assessed controls must be evaluated before a final compliance posture can be determined.

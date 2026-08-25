@@ -10,12 +10,15 @@ Phase 1 complete. Seeking collaboration and early client partnerships.
 
 ## What It Does
 
-- Maps 39 controls across six compliance frameworks simultaneously
+- Maps 150 controls across six compliance frameworks simultaneously, with a curated 39-control Core baseline and full framework depth available on demand
 - Tracks assessment status per control with full audit trail
 - Role-based access control (Admin and Viewer roles)
 - User management with self-registration and admin approval workflow
-- Exports audit-ready reports in PDF, CSV, and HTML formats
+- Exports audit-ready reports in PDF, CSV, and HTML formats, filterable by Core or Full control set
 - Framework filter tabs to isolate controls by standard
+- Live search across all controls by ID or description
+- Collapsible category sections grouped by NIST CSF function
+- Priority view surfacing Non-Compliant controls, Critical/High vulnerabilities, and Critical/High risks in one place
 - Live compliance score updated in real time
 - Developer activity log with session tracking and statistics
 
@@ -46,7 +49,7 @@ Phase 1 complete. Seeking collaboration and early client partnerships.
 
 ```
 auditra/
-├── compliance_mapper.py      # Core control database (39 controls, 6 frameworks)
+├── compliance_mapper.py      # Control database (150 controls, 6 frameworks, Core/Full tiers)
 ├── app.py                    # Flask web server with auth and all routes
 ├── database.py               # SQLite with audit log, session log, user management
 ├── templates/
@@ -126,13 +129,33 @@ Developer log: http://localhost:5000/devlog
 
 ## Controls Coverage
 
-| Category | Count |
+Auditra offers two levels of depth, selectable per view and per export.
+
+**Core (39 controls)** — the original curated baseline, ideal for first-pass
+assessments and client onboarding.
+
+**Full (150 controls)** — comprehensive framework depth, including complete
+NIST CSF 2.0 coverage across all six functions.
+
+| Category | Core | Full |
+|---|---|---|
+| NIST CSF | 13 | 106 (all 6 functions, 22 categories) |
+| PCI-DSS v4.0.1 | 4 | 10 (all 12 requirement areas represented) |
+| NDPA 2023 + GAID 2025 | 7 | 13 |
+| GDPR | 15 | 21 |
+| **Total** | **39** | **150** |
+
+### NIST CSF 2.0 Full Breakdown
+
+| Function | Subcategories |
 |---|---|
-| NIST CSF core controls | 13 |
-| PCI-DSS specific | 4 |
-| NDPA + GAID specific | 7 |
-| GDPR specific | 15 |
-| **Total** | **39** |
+| Govern (GV) | 31 |
+| Identify (ID) | 21 |
+| Protect (PR) | 22 |
+| Detect (DE) | 11 |
+| Respond (RS) | 13 |
+| Recover (RC) | 8 |
+| **Total** | **106** |
 
 ---
 
@@ -157,19 +180,24 @@ Developer log: http://localhost:5000/devlog
 - [x] SQLite persistent database
 - [x] User authentication and roles
 - [x] User management and self-registration
-- [x] PDF, CSV, and HTML export
+- [x] PDF, CSV, and HTML export (Core/Full tier selectable)
 - [x] Multi-framework support: NIST CSF, ISO 27001, SOC 2, PCI-DSS v4.0.1, NDPA 2023 + GAID 2025, GDPR
 - [x] Framework filter tabs
 - [x] Compliance audit trail
 - [x] Developer activity log with session tracking
 - [x] Auditra branding
-- [ ] Deploy to DigitalOcean (public URL)
-- [ ] Vulnerability tracker with CVE to asset mapping
-- [ ] Risk scoring engine (likelihood x impact matrix)
-- [ ] Email-based notifications and breach alerts
+- [x] Deployed live on Render (public URL)
+- [x] Vulnerability tracker with CVE to asset mapping and CVSS-based risk rating
+- [x] Risk scoring engine with likelihood x impact heat map and auto-generation from controls/vulnerabilities
+- [x] Email-based notifications via Resend (registration, activation, password reset, critical alerts)
+- [x] Full NIST CSF 2.0 expansion (all 106 subcategories)
+- [x] Deep expansion of NDPA/GAID, GDPR, and PCI-DSS controls
+- [x] Core / Full / Priority dashboard views with live search and collapsible sections
+- [ ] Domain verification for full email deliverability to all recipients
 - [ ] Multi-tenant architecture (Phase 3)
 - [ ] Paystack subscription billing (Phase 3)
 - [ ] Third-party integrations: Jira, AWS Security Hub, Google Workspace (Phase 3)
+- [ ] SIEM/EDR integrations: Splunk, QRadar, Microsoft Sentinel (Phase 3)
 - [ ] Portfolio and marketing site
 
 ---
