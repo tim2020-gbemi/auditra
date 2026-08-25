@@ -4,7 +4,8 @@
 import datetime
 import csv
 import io
-from flask import Flask, render_template, request, redirect, url_for, session, make_response
+import json
+from flask import Flask, render_template, request, redirect, url_for, session, make_response, jsonify
 from xhtml2pdf import pisa
 from notifications import (
     notify_admins_new_registration, notify_user_account_activated,
@@ -24,7 +25,9 @@ from database import (
     get_all_risks, get_risk_by_id, create_risk, update_risk, delete_risk,
     auto_generate_risks_from_controls, auto_generate_risks_from_vulnerabilities,
     get_risk_summary, get_risk_status_summary, get_heatmap_matrix,
-    calculate_risk_score_rating, get_admin_emails, get_control_by_id, get_priority_items
+    calculate_risk_score_rating, get_admin_emails, get_control_by_id, get_priority_items,
+    generate_api_key, get_api_keys_for_user, revoke_api_key, verify_api_key,
+    log_incoming_event, get_incoming_events, process_incoming_event
 )
 
 app = Flask(__name__)
@@ -710,6 +713,139 @@ def clear_devlog():
     conn.close()
     log_activity(session["username"], "LOG_CLEARED", "Session log cleared by admin", get_ip())
     return redirect(url_for("devlog"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INTEGRATIONS (SIEM/EDR groundwork)
+# API keys are personal to each admin. The /api/events endpoint is the
+# receiving end any external SIEM/EDR tool's webhook can be pointed at.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/integrations")
+def integrations():
+    """
+    Integrations page: generate/revoke personal API keys, see the webhook
+    URL, and view the log of events received from connected tools.
+    Admin only, same as Users and Dev Log.
+    """
+    if not logged_in() or not is_admin():
+        return redirect(url_for("dashboard"))
+    log_activity(session["username"], "PAGE_VIEW", "Viewed integrations page", get_ip())
+    keys   = get_api_keys_for_user(session["user_id"])
+    events = get_incoming_events(limit=50)
+    return render_template(
+        "integrations.html",
+        keys=keys, events=events,
+        username=session["username"], role=session["role"],
+        new_key=session.pop("new_api_key", None)  # shown once, then cleared
+    )
+
+
+@app.route("/integrations/generate", methods=["POST"])
+def generate_key_route():
+    if not logged_in() or not is_admin():
+        return redirect(url_for("dashboard"))
+    label = request.form.get("label", "").strip() or "Unnamed key"
+    full_key = generate_api_key(session["user_id"], label)
+    # Stash the raw key in session for one-time display on the next page load.
+    # It is never stored anywhere else in plain text.
+    session["new_api_key"] = full_key
+    log_activity(session["username"], "API_KEY_CREATED", f"Generated API key: {label}", get_ip())
+    return redirect(url_for("integrations"))
+
+
+@app.route("/integrations/revoke/<int:key_id>")
+def revoke_key_route(key_id):
+    if not logged_in() or not is_admin():
+        return redirect(url_for("dashboard"))
+    revoke_api_key(key_id, session["user_id"])
+    log_activity(session["username"], "API_KEY_REVOKED", f"Revoked API key #{key_id}", get_ip())
+    return redirect(url_for("integrations"))
+
+
+@app.route("/api/events", methods=["POST"])
+def receive_event():
+    """
+    Public-facing ingestion endpoint. Authenticated via API key, not session
+    login, since this is meant to be called by external tools (SIEM, EDR,
+    or any system that can send an HTTP POST with a JSON body).
+
+    Expected header: Authorization: Bearer auditra_live_xxxxxxxx
+
+    Expected JSON body:
+    {
+        "event_type": "vulnerability" | "risk",
+        "severity": "critical" | "high" | "medium" | "low",
+        "title": "short identifier, e.g. a CVE ID or risk name",
+        "description": "details of the event",
+        "asset_name": "required for vulnerability events",
+        "cvss_score": 9.8  (optional, for vulnerability events)
+    }
+    """
+    auth_header = request.headers.get("Authorization", "")
+    provided_key = auth_header.replace("Bearer ", "").strip()
+
+    user = verify_api_key(provided_key)
+    if not user:
+        log_incoming_event(
+            source="unknown", event_type="N/A", severity="N/A", title="N/A",
+            payload_raw=request.get_data(as_text=True)[:2000],
+            status="REJECTED", result_detail="Invalid or missing API key"
+        )
+        return jsonify({"error": "Invalid or missing API key"}), 401
+
+    body = request.get_json(silent=True)
+    if not body:
+        log_incoming_event(
+            source=user["username"], event_type="N/A", severity="N/A", title="N/A",
+            payload_raw=request.get_data(as_text=True)[:2000],
+            status="REJECTED", result_detail="Request body is not valid JSON"
+        )
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    event_type  = body.get("event_type", "")
+    severity    = body.get("severity", "")
+    title       = body.get("title", "")
+    description = body.get("description", "")
+    asset_name  = body.get("asset_name", "")
+    cvss_score  = body.get("cvss_score")
+
+    if event_type not in ("vulnerability", "risk"):
+        log_incoming_event(
+            source=user["username"], event_type=event_type or "N/A", severity=severity,
+            title=title, payload_raw=json.dumps(body)[:2000],
+            status="REJECTED", result_detail="event_type must be 'vulnerability' or 'risk'"
+        )
+        return jsonify({"error": "event_type must be 'vulnerability' or 'risk'"}), 400
+
+    if event_type == "vulnerability" and not asset_name:
+        log_incoming_event(
+            source=user["username"], event_type=event_type, severity=severity,
+            title=title, payload_raw=json.dumps(body)[:2000],
+            status="REJECTED", result_detail="asset_name is required for vulnerability events"
+        )
+        return jsonify({"error": "asset_name is required for vulnerability events"}), 400
+
+    success, message = process_incoming_event(
+        event_type=event_type, severity=severity, title=title,
+        description=description, asset_name=asset_name, cvss_score=cvss_score,
+        source=user["username"]
+    )
+
+    log_incoming_event(
+        source=user["username"], event_type=event_type, severity=severity,
+        title=title, payload_raw=json.dumps(body)[:2000],
+        status="PROCESSED" if success else "FAILED", result_detail=message
+    )
+    log_activity(
+        user["username"], "API_EVENT_RECEIVED",
+        f"{event_type} event via API: {title} ({severity})", get_ip()
+    )
+
+    if success:
+        return jsonify({"status": "ok", "message": message}), 201
+    else:
+        return jsonify({"error": message}), 400
 
 
 if __name__ == "__main__":

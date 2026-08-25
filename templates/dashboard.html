@@ -121,6 +121,7 @@
             <span class="role-badge role-{{ role }}">{{ role | upper }}</span>
             <a href="/change-password" class="logout-btn">Change Password</a>
             {% if role == 'admin' %}<a href="/users" class="logout-btn">Users</a>{% endif %}
+            {% if role == 'admin' %}<a href="/integrations" class="logout-btn">Integrations</a>{% endif %}
             <a href="/vulnerabilities" class="logout-btn">Vulnerabilities</a>
             <a href="/risks" class="logout-btn">Risk Register</a>
             <a href="/pdf?view={{ 'core' if view == 'core' else 'full' }}" class="pdf-btn">Download PDF</a>

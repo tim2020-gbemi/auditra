@@ -3,6 +3,8 @@
 
 import sqlite3
 import datetime
+import secrets
+import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
 from compliance_mapper import CONTROLS_DB
 
@@ -133,6 +135,40 @@ def init_db():
             identified_date TEXT,
             reviewed_date   TEXT,
             created_at      TEXT
+        )
+    """)
+
+    # API keys for external tool integration (SIEM, EDR, and similar).
+    # Each admin can generate their own key. Keys are stored hashed,
+    # only the prefix is kept in plain text for display/identification.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id      INTEGER NOT NULL,
+            key_hash     TEXT NOT NULL,
+            key_prefix   TEXT NOT NULL,
+            label        TEXT,
+            is_active    INTEGER DEFAULT 1,
+            last_used_at TEXT,
+            created_at   TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
+    # Incoming events log: every event received via the API, successful or not.
+    # Kept separate from session_log since these come from external systems,
+    # not from logged-in user actions.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS incoming_events (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            source       TEXT,
+            event_type   TEXT,
+            severity     TEXT,
+            title        TEXT,
+            payload_raw  TEXT,
+            status       TEXT,
+            result_detail TEXT,
+            received_at  TEXT
         )
     """)
 
@@ -933,3 +969,177 @@ def delete_user(user_id):
     cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API KEY MANAGEMENT (for SIEM/EDR and other external tool integration)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def generate_api_key(user_id, label):
+    """
+    Generate a new API key for a user. The full key is returned ONCE here
+    and never stored in plain text or retrievable again, only its hash is
+    kept for verification, standard practice for API keys (same principle
+    as password hashing).
+
+    Returns the full key string (e.g. 'auditra_live_xxxxxxxxxxxx') so the
+    caller can display it to the admin exactly once.
+    """
+    raw_secret = secrets.token_hex(24)          # 48 hex characters of randomness
+    full_key   = f"auditra_live_{raw_secret}"
+    key_hash   = hashlib.sha256(full_key.encode()).hexdigest()
+    key_prefix = full_key[:20]                   # shown in the UI for identification, not the secret itself
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO api_keys (user_id, key_hash, key_prefix, label, is_active, created_at)
+        VALUES (?, ?, ?, ?, 1, ?)
+    """, (
+        user_id, key_hash, key_prefix, label,
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+    return full_key
+
+
+def get_api_keys_for_user(user_id):
+    """List all API keys belonging to a user, without exposing the actual secret."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def revoke_api_key(key_id, user_id):
+    """
+    Deactivate a key. Scoped to user_id so a user can only revoke their own keys,
+    prevents an admin from accidentally or maliciously revoking someone else's.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE api_keys SET is_active = 0 WHERE id = ? AND user_id = ?",
+        (key_id, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def verify_api_key(provided_key):
+    """
+    Check an incoming API key against stored hashes.
+    Returns the associated user row if valid and active, otherwise None.
+    Updates last_used_at on successful verification.
+    """
+    if not provided_key or not provided_key.startswith("auditra_live_"):
+        return None
+
+    key_hash = hashlib.sha256(provided_key.encode()).hexdigest()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT api_keys.*, users.username, users.role
+        FROM api_keys
+        JOIN users ON api_keys.user_id = users.id
+        WHERE api_keys.key_hash = ? AND api_keys.is_active = 1
+    """, (key_hash,))
+    row = cursor.fetchone()
+
+    if row:
+        cursor.execute(
+            "UPDATE api_keys SET last_used_at = ? WHERE id = ?",
+            (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), row["id"])
+        )
+        conn.commit()
+
+    conn.close()
+    return row
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INCOMING EVENTS (SIEM/EDR groundwork)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def log_incoming_event(source, event_type, severity, title, payload_raw, status, result_detail):
+    """Record every incoming API event, successful or rejected, for auditability."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO incoming_events (source, event_type, severity, title, payload_raw, status, result_detail, received_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        source, event_type, severity, title, payload_raw, status, result_detail,
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+    conn.close()
+
+
+def get_incoming_events(limit=100):
+    """Fetch the most recent incoming events, newest first."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM incoming_events ORDER BY received_at DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def process_incoming_event(event_type, severity, title, description, asset_name, cvss_score, source):
+    """
+    Convert a validated incoming event into an actual Auditra record.
+    event_type='vulnerability' creates/updates an asset and logs a vulnerability.
+    event_type='risk' creates a manual-style risk entry.
+    Returns (success: bool, message: str).
+    """
+    severity_map = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low"}
+    normalized_severity = severity_map.get((severity or "").lower(), "Medium")
+
+    if event_type == "vulnerability":
+        # Find or create the asset by name
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM assets WHERE name = ?", (asset_name,))
+        row = cursor.fetchone()
+        if row:
+            asset_id = row["id"]
+        else:
+            cursor.execute("""
+                INSERT INTO assets (name, category, description, owner, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                asset_name or "Unknown Asset (from integration)", "Server / Infrastructure",
+                f"Auto-created from {source} integration", "Unassigned",
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ))
+            asset_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        score = cvss_score if cvss_score is not None else {"Critical": 9.5, "High": 7.5, "Medium": 5.0, "Low": 2.0}[normalized_severity]
+        create_vulnerability(
+            asset_id=asset_id, cve_id=title, cvss_score=score,
+            description=description or f"Received via {source} integration",
+            affected_system=asset_name, identified_date=datetime.date.today().strftime("%Y-%m-%d"),
+            assigned_to="Unassigned"
+        )
+        return True, f"Vulnerability created on asset '{asset_name}'."
+
+    elif event_type == "risk":
+        likelihood_map = {"Critical": 5, "High": 4, "Medium": 3, "Low": 2}
+        impact_map     = {"Critical": 5, "High": 4, "Medium": 3, "Low": 2}
+        create_risk(
+            title=title or f"Risk from {source}",
+            description=description or f"Received via {source} integration",
+            source_type="Integration", source_ref=f"{source}:{title}",
+            likelihood=likelihood_map[normalized_severity], impact=impact_map[normalized_severity],
+            owner="Unassigned", identified_date=datetime.date.today().strftime("%Y-%m-%d")
+        )
+        return True, "Risk entry created."
+
+    else:
+        return False, f"Unknown event_type '{event_type}'. Must be 'vulnerability' or 'risk'."
