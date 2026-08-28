@@ -223,8 +223,9 @@
                 {% elif score >= 40 %}{% set gauge_color = "#f0b93c" %}
                 {% else %}{% set gauge_color = "#f0625f" %}
                 {% endif %}
-                <circle class="gauge-fill" cx="66" cy="66" r="56" stroke="{{ gauge_color }}"
-                    stroke-dasharray="{{ circumference }}" stroke-dashoffset="{{ offset }}"/>
+                <circle class="gauge-fill" id="gauge-circle" cx="66" cy="66" r="56" stroke="{{ gauge_color }}"
+                    stroke-dasharray="{{ circumference }}" stroke-dashoffset="{{ circumference }}"
+                    data-target-offset="{{ offset }}"/>
             </svg>
             <div class="gauge-center">
                 <div class="gauge-number">{{ score }}%</div>
@@ -421,6 +422,20 @@
     </div>
 
     <script>
+        // Animate the compliance gauge from empty to its real value on load.
+        // The circle starts at full stroke-dashoffset (0% filled) in the HTML;
+        // this waits a beat then sets the real offset so the CSS transition
+        // actually has something to animate between.
+        window.addEventListener('DOMContentLoaded', function() {
+            const gauge = document.getElementById('gauge-circle');
+            if (gauge) {
+                const target = gauge.getAttribute('data-target-offset');
+                setTimeout(function() {
+                    gauge.style.strokeDashoffset = target;
+                }, 100);
+            }
+        });
+
         function toggleExportMenu(event) {
             event.stopPropagation();
             document.getElementById('export-menu').classList.toggle('open');
