@@ -4,115 +4,131 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auditra - Developer Activity Log</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; --success:#4cda8a; --warning:#f5c842; --danger:#f76f6f; }
+        :root {
+            --bg:#0a0a12; --surface:#141420; --surface-raised:#191927; --border:#242438;
+            --accent:#4f8ef7; --red:#f0625f; --red-glow:rgba(240,98,95,.15);
+            --text:#d8d8ec; --text-bright:#f4f4fb; --muted:#666680;
+            --success:#3ecf8e; --warning:#f0b93c; --danger:#f0625f;
+            --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.24);
+        }
         * { box-sizing:border-box; margin:0; padding:0; }
-        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:36px 32px 60px; -webkit-font-smoothing:antialiased; }
 
-        /* TOPBAR */
-        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; }
-        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
-        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; letter-spacing:.05em; }
-        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
-        .topbar-right { display:flex; align-items:center; gap:12px; }
-        .back-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
-        .back-btn:hover { border-color:var(--accent); color:var(--text); }
-        .logout-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
-        .logout-btn:hover { border-color:var(--accent); color:var(--text); }
+        .topbar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+        .brand-row { display:flex; align-items:center; gap:12px; }
+        .brand-mark { width:34px; height:34px; border-radius:8px; background:linear-gradient(155deg, var(--red), #b53a37); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .brand-mark svg { width:18px; height:18px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:var(--text-bright); letter-spacing:.02em; line-height:1; }
+        .topbar-left .subline { color:var(--muted); font-size:11px; margin-top:5px; font-family:'IBM Plex Mono',monospace; letter-spacing:.03em; }
+        .topbar-right { display:flex; align-items:center; gap:6px; }
+        .nav-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:7px; padding:6px 13px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; transition:all .15s ease; display:inline-flex; align-items:center; gap:5px; }
+        .nav-btn:hover { border-color:var(--red); color:var(--text-bright); background:var(--red-glow); }
 
-        /* STATS CARDS */
-        .cards { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:40px; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
-        .card .count { font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; line-height:1; margin-bottom:6px; color:var(--accent); }
-        .card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
-        .card.danger .count  { color:var(--danger); }
-        .card.success .count { color:var(--success); }
-        .card.warning .count { color:var(--warning); }
+        .cards { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:28px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 14px; box-shadow:var(--shadow-card); transition:transform .15s ease, border-color .15s ease; text-align:center; }
+        .card:hover { transform:translateY(-2px); border-color:#2e2e46; }
+        .card-icon { width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+        .card-icon svg { width:12px; height:12px; }
+        .card .count { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700; line-height:1; color:var(--text-bright); }
+        .card .label { font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-top:5px; }
+        .card.success .card-icon { background:rgba(62,207,142,.12); } .card.success .card-icon svg { stroke:var(--success); } .card.success .count { color:var(--success); }
+        .card.danger .card-icon { background:var(--red-glow); } .card.danger .card-icon svg { stroke:var(--red); } .card.danger .count { color:var(--red); }
+        .card.warning .card-icon { background:rgba(240,185,60,.12); } .card.warning .card-icon svg { stroke:var(--warning); } .card.warning .count { color:var(--warning); }
+        .card.neutral .card-icon { background:rgba(79,142,247,.12); } .card.neutral .card-icon svg { stroke:var(--accent); } .card.neutral .count { color:var(--accent); }
 
-        /* FILTER BAR */
-        .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-        .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; }
-        .filter-btn:hover, .filter-btn.active { border-color:var(--accent); color:var(--accent); }
+        .filter-bar { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
         .filter-label { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-right:4px; }
+        .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:7px; padding:6px 13px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; cursor:pointer; transition:all .15s ease; }
+        .filter-btn:hover, .filter-btn.active { border-color:var(--red); color:#f59290; background:var(--red-glow); }
 
-        /* TABLE */
-        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
-        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-card); }
         table { width:100%; border-collapse:collapse; }
-        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.1em; padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        thead th { background:var(--surface-raised); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.06em; padding:10px 16px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
         tbody tr { border-bottom:1px solid var(--border); }
         tbody tr:last-child { border-bottom:none; }
-        tbody tr:hover { background:rgba(79,142,247,.04); }
-        td { padding:10px 16px; vertical-align:top; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+        tbody tr:hover { background:var(--red-glow); }
+        td { padding:9px 16px; vertical-align:top; font-size:12px; font-family:'IBM Plex Mono',monospace; }
 
-        /* ACTION BADGES */
-        .action-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:600; white-space:nowrap; }
-        .action-LOGIN          { background:#1a2e5a; color:#7ab4ff; }
-        .action-LOGIN_FAILED   { background:#7a1e1e; color:#ffb3b3; }
-        .action-LOGOUT         { background:#2a2a3d; color:#9999bb; }
-        .action-PAGE_VIEW      { background:#1a3a2e; color:#7affd4; }
-        .action-EXPORT         { background:#2e1a3a; color:#d4a0ff; }
-        .action-STATUS_UPDATE  { background:#3a2e1a; color:#ffd480; }
-        .action-PASSWORD_CHANGE{ background:#1a3a3a; color:#80ffff; }
-        .action-PASSWORD_RESET { background:#3a1a3a; color:#ff80ff; }
-        .action-USER_CREATED   { background:#1a4a2e; color:#80ffaa; }
-        .action-USER_ACTIVATED { background:#1a4a2e; color:#80ffaa; }
-        .action-USER_DEACTIVATED{ background:#4a2a1a; color:#ffaa80; }
-        .action-USER_DELETED   { background:#7a1e1e; color:#ffb3b3; }
-        .action-ROLE_CHANGE    { background:#3a3a1a; color:#ffff80; }
-        .action-REGISTER       { background:#1a2e5a; color:#7ab4ff; }
+        .action-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:9.5px; font-weight:600; white-space:nowrap; }
+        .action-LOGIN          { background:rgba(79,142,247,.12); color:#8fb4f8; }
+        .action-LOGIN_FAILED   { background:var(--red-glow); color:#f59290; }
+        .action-LOGOUT         { background:rgba(255,255,255,.05); color:var(--muted); }
+        .action-PAGE_VIEW      { background:rgba(62,207,142,.12); color:#6fdba8; }
+        .action-EXPORT         { background:rgba(163,110,240,.12); color:#c0a0f5; }
+        .action-STATUS_UPDATE  { background:rgba(240,185,60,.12); color:#f5cc6f; }
+        .action-PASSWORD_CHANGE{ background:rgba(60,196,240,.12); color:#7fd8f5; }
+        .action-PASSWORD_RESET { background:rgba(163,110,240,.12); color:#e0a0f5; }
+        .action-USER_CREATED   { background:rgba(62,207,142,.12); color:#80ffaa; }
+        .action-USER_ACTIVATED { background:rgba(62,207,142,.12); color:#80ffaa; }
+        .action-USER_DEACTIVATED{ background:rgba(240,150,60,.12); color:#f5ac6f; }
+        .action-USER_DELETED   { background:var(--red-glow); color:#f59290; }
+        .action-ROLE_CHANGE    { background:rgba(240,185,60,.12); color:#f5f280; }
+        .action-REGISTER       { background:rgba(79,142,247,.12); color:#8fb4f8; }
+        .action-API_KEY_CREATED{ background:rgba(60,196,240,.12); color:#7fd8f5; }
+        .action-API_KEY_REVOKED{ background:var(--red-glow); color:#f59290; }
+        .action-API_EVENT_RECEIVED{ background:rgba(60,196,240,.12); color:#7fd8f5; }
+        .action-LOG_CLEARED    { background:rgba(255,255,255,.05); color:var(--muted); }
 
-        .username-cell { color:var(--accent); }
+        .username-cell { color:var(--red); }
         .ip-cell { color:var(--muted); font-size:11px; }
         .time-cell { color:var(--muted); font-size:11px; white-space:nowrap; }
-        .detail-cell { color:var(--text); font-size:11px; font-family:'IBM Plex Sans',sans-serif; }
+        .detail-cell { color:var(--text); font-size:11.5px; font-family:'IBM Plex Sans',sans-serif; }
 
-        .footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+        .footer { margin-top:32px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+        .clear-logs-btn { background:var(--red-glow); color:#f59290; border:1px solid rgba(240,98,95,.3); border-radius:6px; padding:5px 13px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; cursor:pointer; transition:background .15s ease; }
+        .clear-logs-btn:hover { background:rgba(240,98,95,.25); }
+
+        @media (max-width: 900px) { .cards { grid-template-columns:repeat(3,1fr); } }
     </style>
 </head>
 <body>
 
     <div class="topbar">
-        <div class="topbar-left">
-            <h1>DEVELOPER LOG</h1>
-            <p>Activity tracking &nbsp;/&nbsp; Last 1000 events &nbsp;/&nbsp; Admin only</p>
+        <div class="brand-row">
+            <div class="brand-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="topbar-left">
+                <h1>DEVELOPER LOG</h1>
+                <div class="subline">Activity tracking &middot; last 1000 events &middot; admin only</div>
+            </div>
         </div>
         <div class="topbar-right">
-            <a href="/" class="back-btn">Back to Dashboard</a>
-            <a href="/logout" class="logout-btn">Sign Out</a>
+            <a href="/" class="nav-btn">Back to Dashboard</a>
+            <a href="/logout" class="nav-btn">Sign out</a>
         </div>
     </div>
 
-    <!-- STATS CARDS -->
     <div class="cards">
         <div class="card success">
-            <div class="count">{{ stats.total_logins }}</div>
-            <div class="label">Total Logins</div>
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></div>
+            <div class="count">{{ stats.total_logins }}</div><div class="label">Total Logins</div>
         </div>
-        <div class="card">
-            <div class="count">{{ stats.unique_users }}</div>
-            <div class="label">Unique Users</div>
+        <div class="card neutral">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="count">{{ stats.unique_users }}</div><div class="label">Unique Users</div>
         </div>
         <div class="card danger">
-            <div class="count">{{ stats.failed_logins }}</div>
-            <div class="label">Failed Logins</div>
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+            <div class="count">{{ stats.failed_logins }}</div><div class="label">Failed Logins</div>
         </div>
         <div class="card warning">
-            <div class="count">{{ stats.total_exports }}</div>
-            <div class="label">Exports</div>
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+            <div class="count">{{ stats.total_exports }}</div><div class="label">Exports</div>
         </div>
-        <div class="card">
-            <div class="count">{{ stats.total_updates }}</div>
-            <div class="label">Status Updates</div>
+        <div class="card neutral">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+            <div class="count">{{ stats.total_updates }}</div><div class="label">Status Updates</div>
         </div>
-        <div class="card">
-            <div class="count" style="font-size:16px;padding-top:4px;">{{ stats.most_active }}</div>
-            <div class="label">Most Active</div>
+        <div class="card success">
+            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+            <div class="count" style="font-size:13px;padding-top:2px;">{{ stats.most_active }}</div><div class="label">Most Active</div>
         </div>
     </div>
 
-    <!-- FILTER BAR -->
     <div class="filter-bar">
         <span class="filter-label">Filter:</span>
         <button class="filter-btn active" onclick="filterAction('all', this)">All</button>
@@ -122,21 +138,14 @@
         <button class="filter-btn" onclick="filterAction('STATUS_UPDATE', this)">Updates</button>
         <button class="filter-btn" onclick="filterAction('PAGE_VIEW', this)">Page Views</button>
         <button class="filter-btn" onclick="filterAction('USER', this)">User Actions</button>
+        <button class="filter-btn" onclick="filterAction('API', this)">API Activity</button>
     </div>
 
-    <!-- ACTIVITY LOG TABLE -->
     <p class="section-title">Activity Log</p>
     <div class="table-wrapper">
         <table id="log-table">
             <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Timestamp</th>
-                    <th>Username</th>
-                    <th>Action</th>
-                    <th>Detail</th>
-                    <th>IP Address</th>
-                </tr>
+                <tr><th>#</th><th>Timestamp</th><th>Username</th><th>Action</th><th>Detail</th><th>IP Address</th></tr>
             </thead>
             <tbody>
                 {% for entry in logs %}
@@ -144,37 +153,26 @@
                     <td style="color:var(--muted);">{{ loop.index }}</td>
                     <td class="time-cell">{{ entry['timestamp'] }}</td>
                     <td class="username-cell">{{ entry['username'] }}</td>
-                    <td>
-                        <span class="action-badge action-{{ entry['action'] }}">
-                            {{ entry['action'] }}
-                        </span>
-                    </td>
+                    <td><span class="action-badge action-{{ entry['action'] }}">{{ entry['action'] }}</span></td>
                     <td class="detail-cell">{{ entry['detail'] }}</td>
                     <td class="ip-cell">{{ entry['ip_address'] }}</td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="6" style="color:var(--muted);text-align:center;padding:24px;">
-                        No activity recorded yet.
-                    </td>
-                </tr>
+                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:28px;">No activity recorded yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
     <div class="footer">
-    <span>Auditra &nbsp;/&nbsp; Developer Log &nbsp;/&nbsp; Admin Only</span>
-    <div style="display:flex;align-items:center;gap:16px;">
-        <span>Showing last 1000 events</span>
-        <form method="POST" action="/devlog/clear"
-              onsubmit="return confirm('Clear all session logs? This cannot be undone.')">
-            <button type="submit" style="background:#7a1e1e;color:#ffb3b3;border:none;border-radius:4px;padding:4px 12px;font-family:IBM Plex Mono,monospace;font-size:11px;cursor:pointer;">
-                Clear All Logs
-            </button>
-        </form>
+        <span>Auditra &middot; Developer Log &middot; Admin Only</span>
+        <div style="display:flex;align-items:center;gap:16px;">
+            <span>Showing last 1000 events</span>
+            <form method="POST" action="/devlog/clear" onsubmit="return confirm('Clear all session logs? This cannot be undone.')">
+                <button type="submit" class="clear-logs-btn">Clear All Logs</button>
+            </form>
+        </div>
     </div>
-</div>
 
     <script>
         function filterAction(action, btn) {
@@ -188,6 +186,9 @@
                 } else if (action === 'USER') {
                     const userActions = ['USER_CREATED','USER_ACTIVATED','USER_DEACTIVATED','USER_DELETED','ROLE_CHANGE','REGISTER'];
                     row.style.display = userActions.includes(rowAction) ? '' : 'none';
+                } else if (action === 'API') {
+                    const apiActions = ['API_KEY_CREATED','API_KEY_REVOKED','API_EVENT_RECEIVED'];
+                    row.style.display = apiActions.includes(rowAction) ? '' : 'none';
                 } else {
                     row.style.display = rowAction === action ? '' : 'none';
                 }

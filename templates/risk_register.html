@@ -4,100 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auditra - Risk Register</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg:#0d0d1a; --surface:#13131f; --border:#1e1e35; --accent:#4f8ef7; --text:#d0d0e8; --muted:#5a5a7a; }
+        :root {
+            --bg:#0a0a12; --surface:#141420; --surface-raised:#191927; --border:#242438;
+            --amber:#e0a838; --amber-glow:rgba(224,168,56,.15);
+            --text:#d8d8ec; --text-bright:#f4f4fb; --muted:#666680;
+            --success:#3ecf8e; --warning:#f0b93c; --danger:#f0625f;
+            --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.24);
+            --shadow-card-hover: 0 2px 4px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.32);
+        }
         * { box-sizing:border-box; margin:0; padding:0; }
-        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:40px 32px; }
+        body { background:var(--bg); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:14px; padding:36px 32px 60px; -webkit-font-smoothing:antialiased; }
 
-        /* TOPBAR */
-        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px; }
-        .topbar-left { border-left:3px solid var(--accent); padding-left:20px; }
-        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:22px; color:#fff; letter-spacing:.05em; }
-        .topbar-left p { color:var(--muted); font-size:12px; margin-top:4px; font-family:'IBM Plex Mono',monospace; }
-        .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .btn-link { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; }
-        .btn-link:hover { border-color:var(--accent); color:var(--text); }
-        .btn-accent { background:var(--accent); color:#fff; border-radius:4px; padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; border:none; cursor:pointer; }
-        .btn-accent:hover { opacity:.85; }
+        .topbar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+        .brand-row { display:flex; align-items:center; gap:12px; }
+        .brand-mark { width:34px; height:34px; border-radius:8px; background:linear-gradient(155deg, var(--amber), #b8790f); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .brand-mark svg { width:18px; height:18px; }
+        .topbar-left h1 { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:var(--text-bright); letter-spacing:.02em; line-height:1; }
+        .topbar-left .subline { color:var(--muted); font-size:11px; margin-top:5px; font-family:'IBM Plex Mono',monospace; letter-spacing:.03em; }
+        .topbar-right { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .nav-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:7px; padding:6px 13px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-decoration:none; transition:all .15s ease; display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+        .nav-btn:hover { border-color:var(--amber); color:var(--text-bright); background:var(--amber-glow); }
+        .nav-btn.primary { background:var(--amber); border-color:var(--amber); color:#1a1206; font-weight:600; }
+        .nav-btn.primary:hover { background:#eab84c; box-shadow:0 4px 14px var(--amber-glow); }
+        .nav-btn svg { width:12px; height:12px; flex-shrink:0; }
 
-        /* CARDS */
-        .cards { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:32px; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
-        .card .count { font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:600; line-height:1; margin-bottom:6px; }
-        .card .label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
-        .card.critical .count { color:#f76f6f; }
-        .card.high     .count { color:#ff9e5c; }
-        .card.medium   .count { color:#f5c842; }
-        .card.low      .count { color:#4cda8a; }
-        .card.total    .count { color:var(--accent); }
+        .export-dropdown { position:relative; display:inline-block; }
+        .export-menu { display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--surface-raised); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow-card-hover); min-width:170px; z-index:50; overflow:hidden; padding:5px; }
+        .export-menu.open { display:block; }
+        .export-menu a { display:flex; align-items:center; gap:9px; padding:8px 10px; color:var(--text); font-size:12px; text-decoration:none; border-radius:6px; transition:background .12s ease; }
+        .export-menu a:hover { background:var(--amber-glow); color:var(--text-bright); }
+        .export-menu a svg { width:14px; height:14px; stroke:var(--muted); flex-shrink:0; }
+        .export-menu a:hover svg { stroke:var(--amber); }
 
-        /* GRID LAYOUT: heatmap + auto-generate panel side by side */
-        .grid-2 { display:grid; grid-template-columns:1.1fr 0.9fr; gap:24px; margin-bottom:32px; align-items:start; }
-        .panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; }
-        .panel h2 { font-family:'IBM Plex Mono',monospace; font-size:13px; color:#fff; letter-spacing:.05em; margin-bottom:16px; text-transform:uppercase; }
+        .cards { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:24px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow-card); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+        .card:hover { transform:translateY(-2px); box-shadow:var(--shadow-card-hover); border-color:#2e2e46; }
+        .card-top { margin-bottom:10px; }
+        .card-icon { width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+        .card-icon svg { width:14px; height:14px; }
+        .card .count { font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:700; line-height:1; }
+        .card .label { font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-top:4px; }
+        .card.total .card-icon { background:var(--amber-glow); } .card.total .card-icon svg { stroke:var(--amber); } .card.total .count { color:var(--amber); }
+        .card.critical .card-icon { background:rgba(240,98,95,.12); } .card.critical .card-icon svg { stroke:var(--danger); } .card.critical .count { color:var(--danger); }
+        .card.high .card-icon { background:rgba(240,150,60,.12); } .card.high .card-icon svg { stroke:#f0973c; } .card.high .count { color:#f0973c; }
+        .card.medium .card-icon { background:rgba(240,185,60,.12); } .card.medium .card-icon svg { stroke:var(--warning); } .card.medium .count { color:var(--warning); }
+        .card.low .card-icon { background:rgba(62,207,142,.12); } .card.low .card-icon svg { stroke:var(--success); } .card.low .count { color:var(--success); }
+
+        .grid-2 { display:grid; grid-template-columns:1.1fr 0.9fr; gap:20px; margin-bottom:28px; align-items:start; }
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; box-shadow:var(--shadow-card); }
+        .panel h2 { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text-bright); letter-spacing:.04em; margin-bottom:16px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+        .panel h2 svg { width:14px; height:14px; stroke:var(--amber); }
 
         /* HEAT MAP */
         .heatmap-wrapper { overflow-x:auto; }
-        .heatmap { border-collapse:collapse; margin-top:8px; }
-        .heatmap th { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:6px; text-align:center; }
-        .heatmap td { width:52px; height:52px; text-align:center; vertical-align:middle; font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; border:1px solid var(--bg); position:relative; }
-        .axis-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+        .heatmap { border-collapse:separate; border-spacing:3px; margin-top:8px; }
+        .heatmap th { font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:6px; text-align:center; font-weight:500; }
+        .heatmap td { width:48px; height:48px; text-align:center; vertical-align:middle; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:700; border-radius:8px; position:relative; }
+        .axis-label { font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
         .impact-axis { writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; padding-right:6px; }
 
-        /* Heat map cell colors by score band */
-        .cell-low      { background:#1a6e3c; color:#d4f5e0; }
-        .cell-medium   { background:#7a5c00; color:#ffe8a8; }
-        .cell-high     { background:#8a3e1a; color:#ffcaa0; }
-        .cell-critical { background:#7a1e1e; color:#ffc0c0; }
-        .cell-empty    { background:#1a1a2e; color:var(--muted); font-weight:400; }
+        .cell-low      { background:rgba(62,207,142,.16); color:#6fdba8; }
+        .cell-medium   { background:rgba(240,185,60,.18); color:#f5cc6f; }
+        .cell-high     { background:rgba(240,150,60,.2); color:#f5ac6f; }
+        .cell-critical { background:rgba(240,98,95,.22); color:#f59290; }
+        .cell-empty    { background:var(--surface-raised); color:var(--border); font-weight:400; }
 
-        /* AUTO GENERATE PANEL */
         .auto-gen-desc { color:var(--muted); font-size:12px; line-height:1.7; margin-bottom:16px; }
         .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
-        .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
-        .legend-dot { width:10px; height:10px; border-radius:2px; display:inline-block; }
+        .legend-item { display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+        .legend-dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
 
-        /* ADD RISK FORM */
         .field { margin-bottom:12px; }
-        .field label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:5px; font-family:'IBM Plex Mono',monospace; }
-        .field input, .field select, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; font-family:'IBM Plex Sans',sans-serif; }
-        .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent); }
+        .field label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+        .field input, .field select, .field textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:8px 11px; color:var(--text); font-size:13px; outline:none; font-family:'IBM Plex Sans',sans-serif; transition:border-color .15s ease; }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--amber); }
         .field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .btn { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:8px 18px; font-size:12px; font-family:'IBM Plex Mono',monospace; cursor:pointer; margin-top:6px; }
-        .btn:hover { opacity:.85; }
+        .btn { background:var(--amber); color:#1a1206; border:none; border-radius:7px; padding:9px 20px; font-size:12px; font-family:'IBM Plex Mono',monospace; font-weight:600; cursor:pointer; margin-top:4px; transition:opacity .15s ease; }
+        .btn:hover { opacity:.87; }
 
-        /* TABLE */
-        .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
-        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+        .section-title { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; }
+        .table-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow-card); }
         table.risk-table { width:100%; border-collapse:collapse; }
-        thead th { background:var(--surface); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.1em; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+        thead th { background:var(--surface-raised); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.06em; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
         tbody tr { border-bottom:1px solid var(--border); }
         tbody tr:last-child { border-bottom:none; }
-        tbody tr:hover { background:rgba(79,142,247,.04); }
-        td { padding:10px 14px; vertical-align:top; font-size:12px; }
-        .risk-title { font-size:13px; color:var(--text); }
-        .risk-title small { display:block; color:var(--muted); font-size:10px; margin-top:2px; font-family:'IBM Plex Mono',monospace; }
-        .source-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:9px; font-weight:600; font-family:'IBM Plex Mono',monospace; }
-        .source-control { background:#1a2e5a; color:#7ab4ff; }
-        .source-vulnerability { background:#2e1a3a; color:#d4a0ff; }
-        .source-manual { background:#2a2a3d; color:#9999bb; }
-        .score-cell { font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px; }
-        .rating-badge { display:inline-block; padding:3px 9px; border-radius:3px; font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
-        .rating-critical { background:#7a1e1e; color:#ffb3b3; }
-        .rating-high     { background:#7a3e1e; color:#ffc89e; }
-        .rating-medium   { background:#7a5c00; color:#ffe08a; }
-        .rating-low      { background:#1a6e3c; color:#a8f0c6; }
+        tbody tr:hover { background:rgba(224,168,56,.03); }
+        td { padding:11px 14px; vertical-align:top; font-size:12.5px; }
+        .risk-title { font-size:13px; color:var(--text-bright); }
+        .risk-title small { display:block; color:var(--muted); font-size:10.5px; margin-top:2px; font-family:'IBM Plex Mono',monospace; }
+        .source-badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:9px; font-weight:600; font-family:'IBM Plex Mono',monospace; }
+        .source-control { background:rgba(79,142,247,.12); color:#8fb4f8; }
+        .source-vulnerability { background:rgba(163,110,240,.12); color:#c0a0f5; }
+        .source-manual { background:rgba(255,255,255,.05); color:var(--muted); }
+        .score-cell { font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px; color:var(--text-bright); }
+        .rating-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+        .rating-critical { background:rgba(240,98,95,.12); color:#f59290; }
+        .rating-high     { background:rgba(240,150,60,.12); color:#f5ac6f; }
+        .rating-medium   { background:rgba(240,185,60,.12); color:#f5cc6f; }
+        .rating-low      { background:rgba(62,207,142,.12); color:#6fdba8; }
 
         .update-form { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
-        .update-form select, .update-form input { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:3px 6px; font-size:10px; font-family:'IBM Plex Mono',monospace; width:60px; }
+        .update-form select, .update-form input { background:var(--surface-raised); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:10px; font-family:'IBM Plex Mono',monospace; width:60px; }
         .update-form input[name="owner"] { width:90px; }
-        .update-form button { background:var(--accent); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:10px; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
-        .delete-link { color:#ffb3b3; font-size:10px; text-decoration:none; margin-left:6px; font-family:'IBM Plex Mono',monospace; }
+        .update-form button { background:var(--amber); color:#1a1206; border:none; border-radius:6px; padding:4px 8px; font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; cursor:pointer; }
+        .delete-link { color:#f59290; font-size:10px; text-decoration:none; margin-left:6px; font-family:'IBM Plex Mono',monospace; }
         .delete-link:hover { text-decoration:underline; }
 
         .empty-state { color:var(--muted); font-size:12px; text-align:center; padding:24px; }
-        .footer { margin-top:32px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+        .footer { margin-top:32px; padding-top:20px; border-top:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 
         @media (max-width: 900px) {
             .grid-2 { grid-template-columns:1fr; }
@@ -108,66 +124,57 @@
 <body>
 
     <div class="topbar">
-        <div class="topbar-left">
-            <h1>RISK REGISTER</h1>
-            <p>Enterprise Risk Scoring &nbsp;/&nbsp; Likelihood &times; Impact Matrix</p>
+        <div class="brand-row">
+            <div class="brand-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#1a1206" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <div class="topbar-left">
+                <h1>RISK REGISTER</h1>
+                <div class="subline">Enterprise risk scoring &middot; likelihood &times; impact matrix</div>
+            </div>
         </div>
         <div class="topbar-right">
-            <a href="/" class="btn-link">Compliance</a>
-            <a href="/vulnerabilities" class="btn-link">Vulnerabilities</a>
-            <a href="/risks/pdf" class="btn-accent">Download PDF</a>
-            <a href="/risks/csv" class="btn-accent">Download CSV</a>
-            <a href="/logout" class="btn-link">Sign Out</a>
+            <a href="/" class="nav-btn">Compliance</a>
+            <a href="/vulnerabilities" class="nav-btn">Vulnerabilities</a>
+            <div class="export-dropdown">
+                <button type="button" class="nav-btn primary" onclick="toggleExportMenu(event)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px;margin-left:2px;"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="export-menu" id="export-menu">
+                    <a href="/risks/pdf">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Download PDF
+                    </a>
+                    <a href="/risks/csv">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                        Download CSV
+                    </a>
+                </div>
+            </div>
+            <a href="/logout" class="nav-btn">Sign out</a>
         </div>
     </div>
 
-    <!-- SUMMARY CARDS -->
     <div class="cards">
-        <div class="card total">
-            <div class="count">{{ total_risks }}</div>
-            <div class="label">Total Risks</div>
-        </div>
-        <div class="card critical">
-            <div class="count">{{ risk_summary['Critical'] }}</div>
-            <div class="label">Critical</div>
-        </div>
-        <div class="card high">
-            <div class="count">{{ risk_summary['High'] }}</div>
-            <div class="label">High</div>
-        </div>
-        <div class="card medium">
-            <div class="count">{{ risk_summary['Medium'] }}</div>
-            <div class="label">Medium</div>
-        </div>
-        <div class="card low">
-            <div class="count">{{ risk_summary['Low'] }}</div>
-            <div class="label">Low</div>
-        </div>
+        <div class="card total"><div class="card-top"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div></div><div class="count">{{ total_risks }}</div><div class="label">Total Risks</div></div>
+        <div class="card critical"><div class="card-top"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div></div><div class="count">{{ risk_summary['Critical'] }}</div><div class="label">Critical</div></div>
+        <div class="card high"><div class="card-top"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div></div><div class="count">{{ risk_summary['High'] }}</div><div class="label">High</div></div>
+        <div class="card medium"><div class="card-top"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></div></div><div class="count">{{ risk_summary['Medium'] }}</div><div class="label">Medium</div></div>
+        <div class="card low"><div class="card-top"><div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div></div><div class="count">{{ risk_summary['Low'] }}</div><div class="label">Low</div></div>
     </div>
 
     <div class="grid-2">
-        <!-- HEAT MAP -->
         <div class="panel">
-            <h2>Risk Heat Map</h2>
+            <h2><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Risk Heat Map</h2>
             <div class="heatmap-wrapper">
                 <table class="heatmap">
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td colspan="5" style="text-align:center;"><span class="axis-label">Impact &rarr;</span></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        {% for i in range(1,6) %}
-                        <th>{{ i }}</th>
-                        {% endfor %}
-                    </tr>
+                    <tr><td></td><td></td><td colspan="5" style="text-align:center;"><span class="axis-label">Impact &rarr;</span></td></tr>
+                    <tr><td></td><td></td>{% for i in range(1,6) %}<th>{{ i }}</th>{% endfor %}</tr>
                     {% for l in range(5,0,-1) %}
                     <tr>
-                        {% if l == 5 %}
-                        <td rowspan="5" class="impact-axis"><span class="axis-label">Likelihood</span></td>
-                        {% endif %}
+                        {% if l == 5 %}<td rowspan="5" class="impact-axis"><span class="axis-label">Likelihood</span></td>{% endif %}
                         <th>{{ l }}</th>
                         {% for i in range(1,6) %}
                             {% set score = l * i %}
@@ -184,60 +191,31 @@
                 </table>
             </div>
             <div class="legend">
-                <div class="legend-item"><span class="legend-dot" style="background:#1a6e3c;"></span> Low (1-4)</div>
-                <div class="legend-item"><span class="legend-dot" style="background:#7a5c00;"></span> Medium (5-9)</div>
-                <div class="legend-item"><span class="legend-dot" style="background:#8a3e1a;"></span> High (10-14)</div>
-                <div class="legend-item"><span class="legend-dot" style="background:#7a1e1e;"></span> Critical (15-25)</div>
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(62,207,142,.4);"></span> Low</div>
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(240,185,60,.4);"></span> Medium</div>
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(240,150,60,.5);"></span> High</div>
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(240,98,95,.5);"></span> Critical</div>
             </div>
         </div>
 
         {% if role == 'admin' %}
-        <!-- AUTO GENERATE + MANUAL ADD -->
         <div class="panel">
-            <h2>Generate Risks</h2>
-            <p class="auto-gen-desc">
-                Scan all Non-Compliant controls and open Critical/High vulnerabilities,
-                and automatically create risk entries for any not already in the register.
-                Duplicates are skipped.
-            </p>
-            <form method="POST" action="/risks/auto-generate">
-                <button class="btn" type="submit">Auto-Generate Risks</button>
-            </form>
+            <h2><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>Generate Risks</h2>
+            <p class="auto-gen-desc">Scan Non-Compliant controls and open Critical/High vulnerabilities, and automatically create risk entries for any not already in the register.</p>
+            <form method="POST" action="/risks/auto-generate"><button class="btn" type="submit">Auto-Generate Risks</button></form>
 
             <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-                <h2 style="margin-bottom:16px;">Add Manual Risk</h2>
+                <h2 style="margin-bottom:16px;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add Manual Risk</h2>
                 <form method="POST" action="/risks/create">
-                    <div class="field">
-                        <label>Risk Title</label>
-                        <input type="text" name="title" placeholder="e.g. Third-party vendor data access" required>
-                    </div>
-                    <div class="field">
-                        <label>Description</label>
-                        <textarea name="description" rows="2" placeholder="Brief description of the risk"></textarea>
+                    <div class="field"><label>Risk Title</label><input type="text" name="title" placeholder="e.g. Third-party vendor data access" required></div>
+                    <div class="field"><label>Description</label><textarea name="description" rows="2" placeholder="Brief description"></textarea></div>
+                    <div class="field-row">
+                        <div class="field"><label>Likelihood (1-5)</label><select name="likelihood" required>{% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
+                        <div class="field"><label>Impact (1-5)</label><select name="impact" required>{% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
                     </div>
                     <div class="field-row">
-                        <div class="field">
-                            <label>Likelihood (1-5)</label>
-                            <select name="likelihood" required>
-                                {% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Impact (1-5)</label>
-                            <select name="impact" required>
-                                {% for n in range(1,6) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field">
-                            <label>Owner</label>
-                            <input type="text" name="owner" placeholder="Team or person">
-                        </div>
-                        <div class="field">
-                            <label>Identified Date</label>
-                            <input type="date" name="identified_date">
-                        </div>
+                        <div class="field"><label>Owner</label><input type="text" name="owner" placeholder="Team or person"></div>
+                        <div class="field"><label>Identified Date</label><input type="date" name="identified_date"></div>
                     </div>
                     <button class="btn" type="submit">Add Risk</button>
                 </form>
@@ -246,29 +224,14 @@
         {% endif %}
     </div>
 
-    <!-- RISK TABLE -->
     <p class="section-title">Risk Register</p>
     <div class="table-wrapper">
         <table class="risk-table">
-            <thead>
-                <tr>
-                    <th>Risk</th>
-                    <th>Source</th>
-                    <th>Likelihood</th>
-                    <th>Impact</th>
-                    <th>Score</th>
-                    <th>Rating</th>
-                    <th>Owner</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Risk</th><th>Source</th><th>Likelihood</th><th>Impact</th><th>Score</th><th>Rating</th><th>Owner</th><th>Status</th></tr></thead>
             <tbody>
                 {% for r in risks %}
                 <tr>
-                    <td class="risk-title">
-                        {{ r['title'] }}
-                        {% if r['description'] %}<small>{{ r['description'][:80] }}{% if r['description']|length > 80 %}...{% endif %}</small>{% endif %}
-                    </td>
+                    <td class="risk-title">{{ r['title'] }}{% if r['description'] %}<small>{{ r['description'][:80] }}{% if r['description']|length > 80 %}...{% endif %}</small>{% endif %}</td>
                     <td><span class="source-badge source-{{ r['source_type'] | lower }}">{{ r['source_type'] }}</span></td>
                     <td>{{ r['likelihood'] }}</td>
                     <td>{{ r['impact'] }}</td>
@@ -278,22 +241,13 @@
                     <td>
                         {% if role == 'admin' %}
                         <form class="update-form" method="POST" action="/risks/update/{{ r['id'] }}">
-                            <select name="likelihood" title="Likelihood">
-                                {% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['likelihood'] %}selected{% endif %}>L{{ n }}</option>{% endfor %}
-                            </select>
-                            <select name="impact" title="Impact">
-                                {% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['impact'] %}selected{% endif %}>I{{ n }}</option>{% endfor %}
-                            </select>
-                            <select name="status" title="Status">
-                                {% for option in ["Open", "Mitigating", "Closed", "Accepted"] %}
-                                    <option value="{{ option }}" {% if option == r['status'] %}selected{% endif %}>{{ option }}</option>
-                                {% endfor %}
-                            </select>
+                            <select name="likelihood" title="Likelihood">{% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['likelihood'] %}selected{% endif %}>L{{ n }}</option>{% endfor %}</select>
+                            <select name="impact" title="Impact">{% for n in range(1,6) %}<option value="{{ n }}" {% if n == r['impact'] %}selected{% endif %}>I{{ n }}</option>{% endfor %}</select>
+                            <select name="status" title="Status">{% for option in ["Open", "Mitigating", "Closed", "Accepted"] %}<option value="{{ option }}" {% if option == r['status'] %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
                             <input type="text" name="owner" value="{{ r['owner'] or '' }}" placeholder="Owner">
                             <button type="submit">Save</button>
                         </form>
-                        <a href="/risks/delete/{{ r['id'] }}" class="delete-link"
-                           onclick="return confirm('Delete this risk entry?')">Delete</a>
+                        <a href="/risks/delete/{{ r['id'] }}" class="delete-link" onclick="return confirm('Delete this risk entry?')">Delete</a>
                         {% else %}
                         <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);">{{ r['status'] }}</span>
                         {% endif %}
@@ -307,9 +261,23 @@
     </div>
 
     <div class="footer">
-        <span>Auditra &nbsp;/&nbsp; Risk Register</span>
-        <span>Risk Score = Likelihood &times; Impact &nbsp;(1-25 scale)</span>
+        <span>Auditra &middot; Risk Register</span>
+        <span>Risk Score = Likelihood &times; Impact (1-25 scale)</span>
     </div>
+
+    <script>
+        function toggleExportMenu(event) {
+            event.stopPropagation();
+            document.getElementById('export-menu').classList.toggle('open');
+        }
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('export-menu');
+            const dropdown = document.querySelector('.export-dropdown');
+            if (menu && dropdown && !dropdown.contains(event.target)) {
+                menu.classList.remove('open');
+            }
+        });
+    </script>
 
 </body>
 </html>

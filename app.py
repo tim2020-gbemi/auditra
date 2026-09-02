@@ -135,7 +135,7 @@ def register():
 @app.route("/")
 def dashboard():
     if not logged_in():
-        return redirect(url_for("login"))
+        return render_template("landing.html")
     log_activity(session["username"], "PAGE_VIEW", "Viewed compliance dashboard", get_ip())
 
     # view can be 'core', 'full', or 'priority' - defaults to core
